@@ -1,49 +1,55 @@
-var gpio_to_pin = [];
-gpio_to_pin[2] = 3;
-gpio_to_pin[3] = 5;
-gpio_to_pin[4] = 7;
-gpio_to_pin[14] = 8;
-gpio_to_pin[15] = 10;
-gpio_to_pin[17] = 11;
-gpio_to_pin[18] = 12;
-gpio_to_pin[27] = 13;
-gpio_to_pin[22] = 15;
-gpio_to_pin[23] = 16;
-gpio_to_pin[24] = 18;
-gpio_to_pin[10] = 19;
-gpio_to_pin[9] = 21;
-gpio_to_pin[25] = 22;
-gpio_to_pin[11] = 23;
-gpio_to_pin[8] = 24;
-gpio_to_pin[7] = 26;
+var gpiomap = [];
+gpiomap[2] = 3;
+gpiomap[3] = 5;
+gpiomap[4] = 7;
+gpiomap[14] = 8;
+gpiomap[15] = 10;
+gpiomap[17] = 11;
+gpiomap[18] = 12;
+gpiomap[27] = 13;
+gpiomap[22] = 15;
+gpiomap[23] = 16;
+gpiomap[24] = 18;
+gpiomap[10] = 19;
+gpiomap[9] = 21;
+gpiomap[25] = 22;
+gpiomap[11] = 23;
+gpiomap[8] = 24;
+gpiomap[7] = 26;
 
-var pin_to_gpio = [];
-pin_to_gpio[3] = 2;
-pin_to_gpio[5] = 3;
-pin_to_gpio[7] = 4;
-pin_to_gpio[8] = 14;
-pin_to_gpio[10] = 15;
-pin_to_gpio[11] = 17;
-pin_to_gpio[12] = 18;
-pin_to_gpio[13] = 27;
-pin_to_gpio[15] = 22;
-pin_to_gpio[16] = 23;
-pin_to_gpio[18] = 24;
-pin_to_gpio[19] = 10;
-pin_to_gpio[21] = 9;
-pin_to_gpio[22] = 25;
-pin_to_gpio[23] = 11;
-pin_to_gpio[24] = 8;
-pin_to_gpio[26] = 7;
+var pinmap = [];
+pinmap[3] = 2;
+pinmap[5] = 3;
+pinmap[7] = 4;
+pinmap[8] = 14;
+pinmap[10] = 15;
+pinmap[11] = 17;
+pinmap[12] = 18;
+pinmap[13] = 27;
+pinmap[15] = 22;
+pinmap[16] = 23;
+pinmap[18] = 24;
+pinmap[19] = 10;
+pinmap[21] = 9;
+pinmap[22] = 25;
+pinmap[23] = 11;
+pinmap[24] = 8;
+pinmap[26] = 7;
+
+function gpio_to_pin(gpio)
+{
+	if(typeof gpio == 'string') //Handle 'GPIO25' etc.
+		return gpio_to_pin(parseInt(gpio.match(/[0-9]+/)));
+	return gpiomap[gpio];
+}
+
+function pin_to_gpio(pin)
+{
+	if(typeof pin == 'string') //Handle 'PIN7' etc.
+		return pin_to_gpio(parseInt(pin.match(/[0-9]+/)));
+	return pinmap[pin];
+}
 
 module.exports = new Object();
-
-module.exports.gpio_to_pin = function(gpio)
-{
-	return gpio_to_pin[gpio];
-}
-
-module.exports.pin_to_gpio = function(pin)
-{
-	return pin_to_gpio[pin];
-}
+module.exports.gpio_to_pin = gpio_to_pin;
+module.exports.pin_to_gpio = pin_to_gpio;

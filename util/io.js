@@ -2,29 +2,31 @@ var gpio	= require('rpi-gpio');
 var gpiomap	= require('./gpio-pinmap');
 var Logger	= require('./logger');
 
-var logger  = new Logger('IO');
-logger.set_prefix('IO');
-
-function get_logger()
+function IO()
 {
-	return logger;
+	this.logger = new Logger('IO');
 }
 
-function write_pin(pin, state, callback)
+IO.prototype.get_logger = function()
+{
+	return this.logger;
+}
+
+IO.prototype.write_pin = function(pin, state, callback)
 {
 	gpio.write(pin, state, function(err) {
 		callback(err);
 	});
 }
 
-function read_pin(pin, callback)
+IO.prototype.read_pin = function(pin, callback)
 {
 	gpio.read(pin, function(err, state) {
 		callback(err, state);
 	});
 }
 
-function listen_change(pin, callback)
+IO.prototype.listen_change = function(pin, callback)
 {
 	gpio.on('change', function(pin_, state) {
 			if(pin_ == pin)
@@ -32,7 +34,7 @@ function listen_change(pin, callback)
 	});
 }
 
-function listen_state(pin, state, callback)
+IO.prototype.listen_state = function(pin, state, callback)
 {
 	gpio.on('change', function(pin_, state_) {
 			if(pin_ == pin && state_ == state)
@@ -55,6 +57,12 @@ IO_pin.prototype.copy = function()
 function IO_config()
 {
 	this.ios = [];
+	this.logger = new Logger('IO-CONF');
+}
+
+IO_config.prototype.get_logger = function()
+{
+	return this.logger;
 }
 
 IO_config.prototype.add_pin = function(pin, mode)
@@ -68,22 +76,26 @@ IO_config.prototype.apply = function(callback)
 	{
 		var io = this.ios[i];
 		var config = this;
-		gpio.setup(io.pin, io.mode, function(io) { return function(err) { config.pin_setup(err, io, callback); }}(io));
+		gpio.setup(io.pin, io.mode, function(io, io_config) { 
+			return function(err) { 
+				config.pin_setup(err, io_config, io, callback); 
+			}
+		}(io, this));
 	}
 };
 
-IO_config.prototype.pin_setup = function(err, io, callback)
+IO_config.prototype.pin_setup = function(err, io_config, io, callback)
 {
 	if(err)
 	{
-		logger.log('GPIO setup failed:');
-		logger.log(err);
+		io_config.logger.log('GPIO setup failed:');
+		io_config.logger.log(err);
 		process.exit(-2);
 	}
 	else
 	{
 		io.ready = true;
-		logger.log('GPIO' + gpiomap.pin_to_gpio(io.pin) + ' initialized: ' + io.mode, Logger.level.debug);
+		io_config.logger.log('GPIO' + gpiomap.pin_to_gpio(io.pin) + ' initialized: ' + io.mode, Logger.level.debug);
 		var ready = true;
 		for (var i = 0; i < this.ios.length; i++)
 		{
@@ -94,16 +106,12 @@ IO_config.prototype.pin_setup = function(err, io, callback)
 	}
 };
 
-module.exports = Object();
-module.exports.IO_pin = IO_pin;
-module.exports.IO_config = IO_config;
-module.exports.get_logger = get_logger;
-module.exports.gpio_to_pin = gpiomap.gpio_to_pin;
-module.exports.pin_to_gpio = gpiomap.pin_to_gpio;
-module.exports.pin_mode = new Object();
-module.exports.pin_mode.in = gpio.DIR_IN;
-module.exports.pin_mode.out = gpio.DIR_OUT;
-module.exports.listen_state = listen_state;
-module.exports.listen_change = listen_change;
-module.exports.write_pin = write_pin;
-module.exports.read_pin = read_pin;
+IO.Pin = IO_pin;
+IO.Config = IO_config;
+IO.gpio_to_pin = gpiomap.gpio_to_pin;
+IO.pin_to_gpio = gpiomap.pin_to_gpio;
+IO.pin_mode = {
+	out:	gpio.DIR_OUT,
+	in:		gpio.DIR_IN
+};
+module.exports = IO;
