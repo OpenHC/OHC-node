@@ -95,12 +95,12 @@ registers.en_aa			= new Register(0x01,
 	});
 registers.en_rxaddr		= new Register(0x02, 
 	{
-		erx_p0:			new Bitfield(0, 0, 1),
-		erx_p1:			new Bitfield(1, 1, 1),
-		erx_p2: 		new Bitfield(2, 2),
-		erx_p3:			new Bitfield(3, 3),
-		erx_p4:			new Bitfield(4, 4),
-		erx_p5:			new Bitfield(5, 5),
+		dpl_p0:			new Bitfield(0, 0, 1),
+		dpl_p1:			new Bitfield(1, 1, 1),
+		dpl_p2: 		new Bitfield(2, 2),
+		dpl_p3:			new Bitfield(3, 3),
+		dpl_p4:			new Bitfield(4, 4),
+		dpl_p5:			new Bitfield(5, 5),
 		reserved:		new Bitfield(6, 7)
 	});
 registers.setp_aw		= new Register(0x03, 
@@ -113,26 +113,124 @@ registers.setup_retr	= new Register(0x04,
 		arc:			new Bitfield(0, 3, 3),
 		ard:			new Bitfield(4, 7)
 	});
-registers.rf_ch			= 0x05;
-registers.rf_setup		= 0x06;
-registers.status		= 0x07;
-registers.observe_tx	= 0x08;
-registers.rpd			= 0x09;
-registers.rx_addr_p0	= 0x0A;
-registers.rx_addr_p1	= 0x0B;
-registers.rx_addr_p2	= 0x0C;
-registers.rx_addr_p3	= 0x0D;
-registers.rx_addr_p4	= 0x0E;
-registers.rx_addr_p5	= 0x0F;
-registers.tx_addr		= 0x10;
-registers.rx_pw_p0		= 0x11;
-registers.rx_pw_p1		= 0x12;
-registers.rx_pw_p2		= 0x13;
-registers.rx_pw_p3		= 0x14;
-registers.rx_pw_p4		= 0x15;
-registers.rx_pw_p5		= 0x16;
-registers.fifo_status	= 0x17;
-registers.dynpd			= 0x1C;
-registers.feature		= 0x1D;
+registers.rf_ch			= new Register(0x05, 
+	{
+		rf_ch:			new Bitfield(0, 6),
+		reserved:		new Bitfield(7, 7)
+	});
+registers.rf_setup		= new Register(0x06, 
+	{
+		obsolete:		new Bitfield(0, 0),
+		rf_pwr:			new Bitfield(1, 2, 3),
+		rf_dr_high: 	new Bitfield(3, 3),
+		pll_lock:		new Bitfield(4, 4),
+		rf_dr_low:		new Bitfield(5, 5),
+		reserved:		new Bitfield(6, 6),
+		cont_wave:		new Bitfield(7, 7)
+	});
+registers.status		= new Register(0x07, 
+	{
+		tx_full:		new Bitfield(0, 0),
+		rx_p_no:		new Bitfield(1, 3, 7),
+		max_rt: 		new Bitfield(4, 4),
+		tx_ds:			new Bitfield(5, 5),
+		rx_dr:			new Bitfield(6, 6),
+		reserved:		new Bitfield(7, 7)
+	});
+registers.observe_tx	= new Register(0x08, 
+	{
+		arc_cnt:		new Bitfield(0, 3),
+		plos_cnt:		new Bitfield(4, 7)
+	});
+registers.rpd			= new Register(0x09, 
+	{
+		rpd:			new Bitfield(0, 0),
+		reserved:		new Bitfield(1, 7)
+	});
+registers.rx_addr_p0	= new Register(0x0A, 
+	{
+		rx_addr_p0:		new Bitfield(0, 39, new Buffer([0xE7, 0xE7, 0xE7, 0xE7, 0xE7]))
+	}, 5);
+registers.rx_addr_p1	= new Register(0x0B, 
+	{
+		rx_addr_p1:		new Bitfield(0, 39, new Buffer([0xC2, 0xC2, 0xC2, 0xC2, 0xC2]))
+	}, 5);
+registers.rx_addr_p2	= new Register(0x0C, 
+	{
+		rx_addr_p2:		new Bitfield(0, 7, 0xC3)
+	});
+registers.rx_addr_p3	= new Register(0x0D, 
+	{
+		rx_addr_p3:		new Bitfield(0, 7, 0xC4)
+	});
+registers.rx_addr_p4	= new Register(0x0E, 
+	{
+		rx_addr_p4:		new Bitfield(0, 7, 0xC5)
+	});
+registers.rx_addr_p5	= new Register(0x0F, 
+	{
+		rx_addr_p5:		new Bitfield(0, 7, 0xC6)
+	});
+registers.tx_addr		= new Register(0x10, 
+	{
+		tx_addr:		new Bitfield(0, 39, new Buffer([0xE7, 0xE7, 0xE7, 0xE7, 0xE7]))
+	}, 5);
+registers.rx_pw_p0		= new Register(0x11, 
+	{
+		rx_pw_p0:		new Bitfield(0, 5),
+		reserved:		new Bitfield(6, 7)
+	});
+registers.rx_pw_p1		= new Register(0x12, 
+	{
+		rx_pw_p1:		new Bitfield(0, 5),
+		reserved:		new Bitfield(6, 7)
+	});
+registers.rx_pw_p2		= new Register(0x13, 
+	{
+		rx_pw_p2:		new Bitfield(0, 5),
+		reserved:		new Bitfield(6, 7)
+	});
+registers.rx_pw_p3		= new Register(0x14, 
+	{
+		rx_pw_p3:		new Bitfield(0, 5),
+		reserved:		new Bitfield(6, 7)
+	});
+registers.rx_pw_p4		= new Register(0x15, 
+	{
+		rx_pw_p4:		new Bitfield(0, 5),
+		reserved:		new Bitfield(6, 7)
+	});
+registers.rx_pw_p5		= new Register(0x16, 
+	{
+		rx_pw_p5:		new Bitfield(0, 5),
+		reserved:		new Bitfield(6, 7)
+	});
+registers.fifo_status	= new Register(0x17, 
+	{
+		rx_empty:		new Bitfield(0, 0),
+		rx_full:		new Bitfield(1, 1),
+		reserved: 		new Bitfield(2, 3),
+		tx_empty:		new Bitfield(4, 4),
+		tx_full:		new Bitfield(5, 5),
+		tx_reuse:		new Bitfield(6, 6),
+		reserved2:		new Bitfield(7, 7)
+	});
+registers.dynpd			= new Register(0x1C, 
+	{
+		dpl_p0:			new Bitfield(0, 0),
+		dpl_p1:			new Bitfield(1, 1),
+		dpl_p2: 		new Bitfield(2, 2),
+		dpl_p3:			new Bitfield(3, 3),
+		dpl_p4:			new Bitfield(4, 4),
+		dpl_p5:			new Bitfield(5, 5),
+		reserved:		new Bitfield(6, 7)
+	});
+registers.feature		= new Register(0x1D, 
+	{
+		en_dpl:			new Bitfield(0, 0),
+		en_ack_pay:		new Bitfield(1, 1),
+		en_dyn_ack:		new Bitfield(2, 2),
+		reserved:		new Bitfield(3, 7)
+	});
 
 module.exports = registers;
