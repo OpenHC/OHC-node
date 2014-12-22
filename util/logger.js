@@ -39,7 +39,7 @@ Logger.prototype.get_devel = function()
 Logger.prototype.log = function(str, devel)
 {
 	if(typeof devel == 'undefined')
-		devel = logger.level.error;
+		devel = Logger.level.error;
 	if(this.devel >= devel)
 		console.log(this.prefix + str);
 }

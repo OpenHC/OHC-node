@@ -57,7 +57,7 @@ Bitfield.prototype.set_value = function(value)
 		var actual_val = (value << this.begin) & ((2 << this.end) - 1);
 		for (var i = 0; i < this.value.length; i++)
 		{
-			this.value[i] = (this.actual_val >> i) & 0xFF;
+			this.value[i] = (actual_val >> i) & 0xFF;
 		}
 	}
 	else
