@@ -1,4 +1,5 @@
 require('./buffer')
+var util = require('util');
 
 function Register(addr, fields, length)
 {
@@ -23,11 +24,11 @@ Register.prototype.get_value = function()
 {
 	var value = new Buffer(this.length);
 	value.fill(0);
-	for(var i = 0; i < this.value.length; i++)
+	for(var i = 0; i < value.length; i++)
 	{
-		for(var j = 0; j < this.fields.length; j++)
+		for(var key in this.fields)
 		{
-			var field_val = this.fields[j].get_value();
+			var field_val = this[key].get_value();
 			if(field_val.length > i)
 			{
 				value[i] |= field_val[i];

@@ -2,11 +2,6 @@ var Logger			= require('./logger');
 var Nrf_scheduler	= require('./nrf-task-scheduler');
 var util			= require('util');
 
-function Command(bincmd)
-{
-	this.cmd = bincmd;
-}
-
 function Command_executor(nrf_io)
 {
 	this.nrf_io = nrf_io;
@@ -46,8 +41,11 @@ Command_executor.prototype.exec = function(cmd, param, data, exec_callback)
 			}
 		}(data, scheduler));
 	scheduler.add_task(function(callback) {
-		this.logger.log('Pulling CSN high' + bincmd, Logger.level.debug);
+		this.logger.log('Pulling CSN high', Logger.level.debug);
 		nrf_io.csn_hi.call(nrf_io, callback);
+	});
+	scheduler.add_task(function(callback) {
+		setTimeout(callback, 1);
 	});
 	scheduler.run(function(scheduler) {
 		return function() {
@@ -61,16 +59,16 @@ Command_executor.prototype.get_logger = function()
 	return this.logger;
 }
 
-Command_executor.r_register				= new Command(parseInt('00000000', 2));
-Command_executor.w_register				= new Command(parseInt('00100000', 2));
-Command_executor.r_rx_payload			= new Command(parseInt('01100001', 2));
-Command_executor.w_tx_payload			= new Command(parseInt('01100000', 2));
-Command_executor.flush_tx				= new Command(parseInt('11100001', 2));
-Command_executor.flush_rx				= new Command(parseInt('11100010', 2));
-Command_executor.reuse_tx_pl			= new Command(parseInt('11100011', 2));
-Command_executor.r_rx_pl_wid			= new Command(parseInt('01100000', 2));
-Command_executor.w_ack_payload			= new Command(parseInt('10101000', 2));
-Command_executor.w_tx_payload_no_ack	= new Command(parseInt('10110000', 2));
-Command_executor.nop					= new Command(parseInt('11111111', 2));
+Command_executor.r_register				= parseInt('00000000', 2);
+Command_executor.w_register				= parseInt('00100000', 2);
+Command_executor.r_rx_payload			= parseInt('01100001', 2);
+Command_executor.w_tx_payload			= parseInt('01100000', 2);
+Command_executor.flush_tx				= parseInt('11100001', 2);
+Command_executor.flush_rx				= parseInt('11100010', 2);
+Command_executor.reuse_tx_pl			= parseInt('11100011', 2);
+Command_executor.r_rx_pl_wid			= parseInt('01100000', 2);
+Command_executor.w_ack_payload			= parseInt('10101000', 2);
+Command_executor.w_tx_payload_no_ack	= parseInt('10110000', 2);
+Command_executor.nop					= parseInt('11111111', 2);
 
 module.exports = Command_executor;
