@@ -33,7 +33,8 @@ function Nrf_io(pin_ce, pin_csn, pin_irq)
 			nrf_io.io.listen_state(nrf_io.IRQ, false, function() {
 				nrf_io.irq();
 			});
-			callback();
+			if(typeof callback == 'function')
+				callback();
 		};
 	}(this));
 }
