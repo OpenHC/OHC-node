@@ -13,14 +13,28 @@ executor.get_logger().set_devel(logger.get_devel());
 var read_register = function() 
 {
 	var buff = new Buffer(1);
-	buff.fill(0);
+	buff.fill(0x00);
 	var util = require('util');
-	executor.exec(Nrf_executor.r_register, 0x05, buff, function(err, data) {
+	executor.exec(Nrf_executor.r_register, 0x01, buff, function(err, data) {
 		if(err)
 			console.log('Error: ' + err);
 		else
 			console.log('Data: ' + util.inspect(data));
 	});
 }
+
+var read_register = function() 
+{
+	var buff = new Buffer(1);
+	buff.fill(0x00);
+	var util = require('util');
+	executor.exec(Nrf_executor.r_register, 0x01, buff, function(err, data) {
+		if(err)
+			console.log('Error: ' + err);
+		else
+			console.log('Data: ' + util.inspect(data));
+	});
+}
+
 nrf_io.init('/dev/spidev0.1', read_register);
 

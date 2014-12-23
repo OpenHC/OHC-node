@@ -1,5 +1,6 @@
 var Logger			= require('./logger');
 var Nrf_scheduler	= require('./nrf-task-scheduler');
+var util			= require('util');
 
 function Command(bincmd)
 {
@@ -29,14 +30,14 @@ Command_executor.prototype.exec = function(cmd, param, data, exec_callback)
 	});
 	scheduler.add_task(function(bincmd) {
 		return function(callback){
-			this.logger.log('Writing cmd to spi' + bincmd, Logger.level.debug);
+			this.logger.log('Writing cmd to spi' + util.inspect(bincmd), Logger.level.debug);
 			nrf_io.spi_write.call(nrf_io, bincmd, callback);
 		}
 	}(bincmd));
 	if(data.length > 0)
 		scheduler.add_task(function(data, scheduler) {
 			return function(callback){
-				this.logger.log('Writing data to spi' + data, Logger.level.debug);
+				this.logger.log('Writing data to spi' + util.inspect(data), Logger.level.debug);
 				nrf_io.spi_transfer.call(nrf_io, data, function(trans_err, trans_data) {
 					callback();
 					scheduler.trans_err = trans_err;

@@ -16,6 +16,7 @@ function Nrf_io(pin_ce, pin_csn, pin_irq)
  Nrf_io.prototype.init = function(spi_dev, callback)
  {
 	this.spi = spi.initialize(spi_dev);
+	this.spi.clockSpeed(500000);
 	this.logger.log('SPI initialized', Logger.level.info);
 
 	var ioready = false;
@@ -90,9 +91,11 @@ Nrf_io.prototype.spi_read = function(length, callback)
 	this.spi.read(length, callback);
 }
 
-Nrf_io.prototype.spi_transfer = function(buff, callback)
+Nrf_io.prototype.spi_transfer = function(buff, callback) //Simple synchronus transfer, returns as many bytes as put in
 {
-	this.spi.transfer(buff, 0, callback);
+	this.spi.transfer(buff, buff.length, function(err, data) {
+		callback(err, data);
+	});
 }
 
 module.exports = Nrf_io;

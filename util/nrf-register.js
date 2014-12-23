@@ -116,7 +116,7 @@ function Registerset()
 		});
 	this.rf_ch			= new Register(0x05, 
 		{
-			rf_ch:			new Bitfield(0, 6),
+			rf_ch:			new Bitfield(0, 6, 2),
 			reserved:		new Bitfield(7, 7)
 		});
 	this.rf_setup		= new Register(0x06, 
