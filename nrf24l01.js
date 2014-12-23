@@ -72,14 +72,16 @@ Nrf.prototype.get_details = function(obj)
 	return util.inspect(obj);
 }
 
-Nrf.prototype.print_details = function()
+Nrf.prototype.print_details = function(callback)
 {
-	this.update_all_registers(function(regset) {
+	this.get_all_registers(function(regset) {
 		this.logger.log(this.get_details(regset));
+		if(typeof callback == 'function')
+			callback(regset);
 	});
 }
 
-Nrf.prototype.update_all_registers = function(callback, regset)
+Nrf.prototype.get_all_registers = function(callback, regset)
 {
 	if(typeof regset == 'undefined')
 		regset = this.nrf_regset;
@@ -117,8 +119,40 @@ Nrf.prototype.update_all_registers = function(callback, regset)
 	}(regset, this));
 }
 
+Nrf.prototype.set_all_registers = function(callback, regset)
+{
+	if(typeof regset == 'undefined')
+		regset = this.nrf_regset;
+	var scheduler = new Nrf_scheduler(this);
+	scheduler.get_logger().set_devel(this.logger.get_devel());
+	for(var key in regset)
+		if(regset.hasOwnProperty(key))
+		{
+			var register = regset[key];
+			scheduler.add_task(function(register) {
+				return function(callback) {
+					var buff = new Buffer(register.length);
+					buff.fill(0);
+					this.executor.exec.call(this.executor, Nrf_executor.w_register, register.addr, register.get_value(), function(err, data) {
+						if(err)
+							this.logger.log('Failed to update module settings');
+						callback();
+					});
+				}
+			}(register));
+		}
+	scheduler.run(function(regset, nrf) {
+		return function() {
+			callback.call(nrf, regset);
+		}
+	}(regset, this));
+}
+
 var nrf = new Nrf();
 nrf.get_logger().set_devel(Logger.level.debug);
 nrf.init(function() {
-	nrf.print_details.call(nrf);
+	nrf.nrf_regset.rf_ch.rf_ch.set_value(0x42);
+	nrf.set_all_registers.call(nrf, function() {
+		nrf.print_details.call(nrf);
+	});
 });
