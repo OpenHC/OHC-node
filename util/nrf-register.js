@@ -72,6 +72,21 @@ Bitfield.prototype.get_value = function()
 	return this.value;
 }
 
+Bitfield.prototype.set_from_register = function(buff)
+{
+	this.value.fill(0);
+	buff.copy(this.value, 0 , 0, this.value.length);
+	for(var i = 0; i < (this.value.length * 8); i++)
+	{
+		if(i < this.begin || i > this.end)
+		{
+			var current_byte = Math.floor(i / 8);
+			var current_bit = i % 8;
+			this.value[current_byte] &= ~(1 << current_bit);
+		}
+	}
+}
+
 function Registerset()
 {
 	this.setup			= new Register(0x00, 

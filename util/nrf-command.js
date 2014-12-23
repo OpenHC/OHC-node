@@ -44,9 +44,6 @@ Command_executor.prototype.exec = function(cmd, param, data, exec_callback)
 		this.logger.log('Pulling CSN high', Logger.level.debug);
 		nrf_io.csn_hi.call(nrf_io, callback);
 	});
-	scheduler.add_task(function(callback) {
-		setTimeout(callback, 1);
-	});
 	scheduler.run(function(scheduler) {
 		return function() {
 			exec_callback(scheduler.trans_err, scheduler.trans_data);
