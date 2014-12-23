@@ -13,9 +13,10 @@ function Nrf_io(pin_ce, pin_csn, pin_irq)
 	this.IRQ = IO.gpio_to_pin(pin_irq);
  }
 
- Nrf_io.prototype.init = function(spi_dev)
+ Nrf_io.prototype.init = function(spi_dev, callback)
  {
 	this.spi = spi.initialize(spi_dev);
+	this.spi.clockSpeed(500000);
 	this.logger.log('SPI initialized', Logger.level.info);
 
 	var ioready = false;
@@ -32,8 +33,42 @@ function Nrf_io(pin_ce, pin_csn, pin_irq)
 			nrf_io.io.listen_state(nrf_io.IRQ, false, function() {
 				nrf_io.irq();
 			});
+			if(typeof callback == 'function')
+				callback();
 		};
 	}(this));
+}
+
+Nrf_io.prototype.ce_hi = function(callback)
+{
+	this.io.write_pin(this.CE, true, function() {
+		if(typeof callback != 'undefined')
+			callback();
+	});
+}
+
+Nrf_io.prototype.ce_lo = function(callback)
+{
+	this.io.write_pin(this.CE, false, function() {
+		if(typeof callback != 'undefined')
+			callback();
+	});
+}
+
+Nrf_io.prototype.csn_hi = function(callback)
+{
+	this.io.write_pin(this.CSN, true, function() {
+		if(typeof callback != 'undefined')
+			callback();
+	});
+}
+
+Nrf_io.prototype.csn_lo = function(callback)
+{
+	this.io.write_pin(this.CSN, false, function() {
+		if(typeof callback != 'undefined')
+			callback();
+	});
 }
 
 Nrf_io.prototype.irq = function()
@@ -45,6 +80,23 @@ Nrf_io.prototype.irq = function()
 Nrf_io.prototype.get_logger = function()
 {
 	return this.logger;
+}
+
+Nrf_io.prototype.spi_write = function(buff, callback)
+{
+	this.spi.write(buff, callback);
+}
+
+Nrf_io.prototype.spi_read = function(length, callback)
+{
+	this.spi.read(length, callback);
+}
+
+Nrf_io.prototype.spi_transfer = function(buff, callback) //Simple synchronus transfer, returns as many bytes as put in
+{
+	this.spi.transfer(buff, buff.length, function(err, data) {
+		callback(err, data);
+	});
 }
 
 module.exports = Nrf_io;

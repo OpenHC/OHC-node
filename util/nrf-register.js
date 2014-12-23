@@ -1,4 +1,5 @@
 require('./buffer')
+var util = require('util');
 
 function Register(addr, fields, length)
 {
@@ -23,11 +24,11 @@ Register.prototype.get_value = function()
 {
 	var value = new Buffer(this.length);
 	value.fill(0);
-	for(var i = 0; i < this.value.length; i++)
+	for(var i = 0; i < value.length; i++)
 	{
-		for(var j = 0; j < this.fields.length; j++)
+		for(var key in this.fields)
 		{
-			var field_val = this.fields[j].get_value();
+			var field_val = this[key].get_value();
 			if(field_val.length > i)
 			{
 				value[i] |= field_val[i];
@@ -69,6 +70,21 @@ Bitfield.prototype.set_value = function(value)
 Bitfield.prototype.get_value = function()
 {
 	return this.value;
+}
+
+Bitfield.prototype.set_from_register = function(buff)
+{
+	this.value.fill(0);
+	buff.copy(this.value, 0 , 0, this.value.length);
+	for(var i = 0; i < (this.value.length * 8); i++)
+	{
+		if(i < this.begin || i > this.end)
+		{
+			var current_byte = Math.floor(i / 8);
+			var current_bit = i % 8;
+			this.value[current_byte] &= ~(1 << current_bit);
+		}
+	}
 }
 
 function Registerset()
@@ -116,7 +132,7 @@ function Registerset()
 		});
 	this.rf_ch			= new Register(0x05, 
 		{
-			rf_ch:			new Bitfield(0, 6),
+			rf_ch:			new Bitfield(0, 6, 2),
 			reserved:		new Bitfield(7, 7)
 		});
 	this.rf_setup		= new Register(0x06, 
