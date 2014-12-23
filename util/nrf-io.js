@@ -13,8 +13,9 @@ function Nrf_io(pin_ce, pin_csn, pin_irq)
 	this.IRQ = IO.gpio_to_pin(pin_irq);
  }
 
- Nrf_io.prototype.init = function(spi_dev, callback)
+ Nrf_io.prototype.init = function(spi_dev, callback, irq_callback)
  {
+ 	this.irq_callback = irq_callback;
 	this.spi = spi.initialize(spi_dev);
 	this.spi.clockSpeed(500000);
 	this.logger.log('SPI initialized', Logger.level.info);
@@ -74,7 +75,7 @@ Nrf_io.prototype.csn_lo = function(callback)
 Nrf_io.prototype.irq = function()
 {
 	logger.log('IRQ', Logger.level.debug);
-	//Do irq stuff here 
+	this.irq_callback();
 }
 
 Nrf_io.prototype.get_logger = function()

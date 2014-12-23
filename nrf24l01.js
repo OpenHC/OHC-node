@@ -1,41 +1,13 @@
 #!/opt/node/bin/node
 
 var util			= require('util');
+var EventEmitter	= require('events').EventEmitter;
 
 var Logger			= require('./util/logger');
 var Nrf_register	= require('./util/nrf-register');
 var Nrf_executor	= require('./util/nrf-command');
 var Nrf_io			= require('./util/nrf-io');
 var Nrf_scheduler	= require('./util/nrf-task-scheduler');
-
-
-var read_register = function() 
-{
-	var util = require('util');
-	executor.exec(Nrf_executor.r_register, 0x05, new Buffer(1), function(err, data) {
-		if(err)
-			console.log('Error: ' + err);
-		else
-		{
-			console.log('Data: ' + util.inspect(data));
-			nrf_regset.rf_ch.rf_ch.set_from_register(data);
-			console.log(util.inspect(nrf_regset.rf_ch.rf_ch));
-		}
-	});
-}
-
-var write_register = function() 
-{
-	nrf_regset.rf_ch.rf_ch.set_value(15);
-	var util = require('util');
-	executor.exec(Nrf_executor.w_register, 0x05, nrf_regset.rf_ch.get_value(), function(err, data) {
-		if(err)
-			console.log('Error: ' + err);
-		else
-			console.log('Data: ' + util.inspect(data));
-		read_register();
-	});
-}
 
 function Nrf()
 {
@@ -58,7 +30,11 @@ Nrf.prototype.init = function(callback, spidev, gpio_ce, gpio_csn, gpio_irq)
 	this.executor = new Nrf_executor(this.nrf_io);
 	this.executor.get_logger().set_devel(this.logger.get_devel());
 	this.nrf_regset =  new Nrf_register();
-	this.nrf_io.init(spidev, callback);
+	this.nrf_io.init(spidev, callback, function(nrf) {
+		return function() {
+			nrf.irq_callback.call(nrf);
+		}
+	}(this));
 }
 
 Nrf.prototype.get_logger = function()
@@ -131,11 +107,9 @@ Nrf.prototype.set_all_registers = function(callback, regset)
 			var register = regset[key];
 			scheduler.add_task(function(register) {
 				return function(callback) {
-					var buff = new Buffer(register.length);
-					buff.fill(0);
 					this.executor.exec.call(this.executor, Nrf_executor.w_register, register.addr, register.get_value(), function(err, data) {
 						if(err)
-							this.logger.log('Failed to update module settings');
+							this.logger.log('Failed to update module registers');
 						callback();
 					});
 				}
@@ -148,11 +122,45 @@ Nrf.prototype.set_all_registers = function(callback, regset)
 	}(regset, this));
 }
 
+Nrf.prototype.set_register = function(register, callback, regset)
+{
+	if(typeof regset == 'undefined')
+		regset = this.nrf_regset;
+	this.executor.exec.call(this.executor, Nrf_executor.w_register, register.addr, register.get_value(), function(err, data) {
+		if(err)
+			this.logger.log('Failed to update register');
+		callback(err, data);
+	});
+}
+
+Nrf.prototype.get_register = function(register, callback, regset)
+{
+	if(typeof regset == 'undefined')
+		regset = this.nrf_regset;
+	var buff = new Buffer(register.length);
+	buff.fill(0);
+	this.executor.exec.call(this.executor, Nrf_executor.r_register, register.addr, buff, function(err, data) {
+		if(err)
+			this.logger.log('Failed to update register');
+		callback(err, data);
+	});
+}
+
+Nrf.prototype.irq_callback = function()
+{
+	this.logger.log('Received IRQ', Logger.level.debug);
+	
+}
+
+util.inherits(Nrf, EventEmitter);
+
 var nrf = new Nrf();
 nrf.get_logger().set_devel(Logger.level.debug);
 nrf.init(function() {
 	nrf.nrf_regset.rf_ch.rf_ch.set_value(0x42);
-	nrf.set_all_registers.call(nrf, function() {
-		nrf.print_details.call(nrf);
+	nrf.set_register.call(nrf, nrf.nrf_regset.rf_ch, function() {
+		nrf.get_register.call(nrf, nrf.nrf_regset.rf_ch, function(err, data) {
+			nrf.logger.log(nrf.get_details(data));
+		});
 	});
 });
