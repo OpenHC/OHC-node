@@ -191,6 +191,9 @@ Nrf.prototype.init_module = function(callback)
 {
 	this.nrf_regset = new Nrf_register();
 	this.nrf_regset.rf_setup.rf_dr_high.set_value(0);
+	this.nrf_regset.rx_pw_p0.rx_pw_p0.set_value(32);
+	this.nrf_regset.rx_pw_p1.rx_pw_p1.set_value(32);
+	this.nrf_regset.setup_retr.ard.set_value(7);
 	var scheduler = new Nrf_scheduler(this);
 	scheduler.add_task(function(callback) {
 		this.set_all_registers(callback);
@@ -204,14 +207,6 @@ Nrf.prototype.init_module = function(callback)
 	scheduler.add_task(function(callback) {
 		this.clear_irq_flags(callback);
 	});
-	for(var i = 0; i < 6; i++)
-	{
-		scheduler.add_task(function(i) {
-			return function(callback) {
-				this.set_payload_width(callback, i);
-			}
-		}(i));
-	}
 	scheduler.run(function() {
 		callback.call(this);
 	});
@@ -235,9 +230,14 @@ Nrf.prototype.init_tx = function(callback)
 {
 	this.nrf_regset.setup.prim_rx.set_value(0);
 	this.nrf_regset.setup.pwr_up.set_value(1);
-	this.set_register(this.nrf_regset.setup, function() {
-		callback();
+	var scheduler = new Nrf_scheduler(this);
+	scheduler.add_task(function(callback) {
+		this.set_register(this.nrf_regset.setup, callback);
 	});
+	scheduler.add_task(function(callback) {
+		this.nrf_io.ce_hi(callback);
+	});
+	scheduler.run(callback);
 }
 
 Nrf.prototype.flush_rx = function(callback)
@@ -374,7 +374,6 @@ nrf.get_logger().set_devel(Logger.level.debug);
 var scheduler = new Nrf_scheduler(nrf);
 scheduler.add_task(nrf.init);
 scheduler.add_task(nrf.init_module);
-scheduler.add_task(nrf.init_tx);
 scheduler.add_task(function(callback) {
 	nrf.set_channel(42, callback);
 });
@@ -385,6 +384,11 @@ scheduler.add_task(function(callback) {
 scheduler.add_task(function(callback) {
 	nrf.set_rx_address(tx_addr, callback, 0);
 });
+var rx_addr = new Buffer([0x13, 0x37, 0x13, 0x37, 0x42]);
+scheduler.add_task(function(callback) {
+	nrf.set_rx_address(rx_addr, callback, 1);
+});
+scheduler.add_task(nrf.init_tx);
 var data = new Buffer([0x42, 0x42, 0x42, 0x42, 0x42, 0xA5, 0x01, 0x74, 0x65, 0x73, 0x74, 0x00]);
 var tx_data = new Buffer(32);
 tx_data.fill(0);
@@ -397,8 +401,8 @@ scheduler.run(function() {
 		nrf.print_details();
 		setInterval(function() {
 			var regmap = new Nrf_register();
-			nrf.get_register(regmap.observe_tx, function() {
-				console.log(util.inspect(regmap.observe_tx));
+			nrf.get_register(regmap.status, function(err, data) {
+				console.log(util.inspect(regmap.status));
 			});
 		}, 3000);
 	});

@@ -2,6 +2,8 @@ var gpio	= require('rpi-gpio');
 var gpiomap	= require('./gpio-pinmap');
 var Logger	= require('./logger');
 
+gpio.setPollFrequency(100);
+
 function IO()
 {
 	this.logger = new Logger('IO');
