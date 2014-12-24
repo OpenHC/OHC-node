@@ -20,6 +20,14 @@ Register.prototype.recalc_fields = function()
 			this[key] = this.fields[key];
 }
 
+Register.prototype.set_value = function(buff)
+{
+	for(var key in this.fields)
+	{
+		this[key].set_from_register(buff);
+	}
+}
+
 Register.prototype.get_value = function()
 {
 	var value = new Buffer(this.length);
