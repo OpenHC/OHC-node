@@ -11,7 +11,7 @@ function Scheduler(env)
 
 Scheduler.prototype.add_task = function(func)
 {
-	this.logger.log('Task added');
+	this.logger.log('Task added', Logger.level.debug);
 	this.tasks.push(func);
 }
 
