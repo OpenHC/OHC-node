@@ -97,7 +97,7 @@ Bitfield.prototype.set_from_register = function(buff)
 
 function Registerset()
 {
-	this.setup			= new Register(0x00, 
+	this.config			= new Register(0x00, 
 		{
 			prim_rx:		new Bitfield(0, 0),
 			pwr_up:			new Bitfield(1, 1),

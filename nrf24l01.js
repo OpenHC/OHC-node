@@ -190,11 +190,14 @@ Nrf.prototype.clear_irq_flags = function(callback)
 Nrf.prototype.init_module = function(callback)
 {
 	this.nrf_regset = new Nrf_register();
+	this.nrf_regset.config.crco.set_value(1);
+	this.nrf_regset.config.en_crc.set_value(1);
 	this.nrf_regset.rf_setup.rf_dr_high.set_value(0);
 	this.nrf_regset.rx_pw_p0.rx_pw_p0.set_value(32);
 	this.nrf_regset.rx_pw_p1.rx_pw_p1.set_value(32);
 	this.nrf_regset.setup_retr.ard.set_value(7);
 	var scheduler = new Nrf_scheduler(this);
+	scheduler.get_logger().set_devel(this.logger.get_devel());
 	scheduler.add_task(function(callback) {
 		this.set_all_registers(callback);
 	});
@@ -214,11 +217,12 @@ Nrf.prototype.init_module = function(callback)
 
 Nrf.prototype.init_rx = function(callback)
 {
-	this.nrf_regset.setup.prim_rx.set_value(1);
-	this.nrf_regset.setup.pwr_up.set_value(1);
+	this.nrf_regset.config.prim_rx.set_value(1);
+	this.nrf_regset.config.pwr_up.set_value(1);
 	var scheduler = new Nrf_scheduler(this);
+	scheduler.get_logger().set_devel(this.logger.get_devel());
 	scheduler.add_task(function(callback) {
-		this.set_register(this.nrf_regset.setup, callback);
+		this.set_register(this.nrf_regset.config, callback);
 	});
 	scheduler.add_task(function(callback) {
 		this.nrf_io.ce_hi(callback);
@@ -228,11 +232,12 @@ Nrf.prototype.init_rx = function(callback)
 
 Nrf.prototype.init_tx = function(callback)
 {
-	this.nrf_regset.setup.prim_rx.set_value(0);
-	this.nrf_regset.setup.pwr_up.set_value(1);
+	this.nrf_regset.config.prim_rx.set_value(0);
+	this.nrf_regset.config.pwr_up.set_value(1);
 	var scheduler = new Nrf_scheduler(this);
+	scheduler.get_logger().set_devel(this.logger.get_devel());
 	scheduler.add_task(function(callback) {
-		this.set_register(this.nrf_regset.setup, callback);
+		this.set_register(this.nrf_regset.config, callback);
 	});
 	scheduler.add_task(function(callback) {
 		this.nrf_io.ce_hi(callback);
@@ -343,6 +348,7 @@ Nrf.prototype.set_payload_width = function(callback, pipe, width)
 Nrf.prototype.send_data = function(data, callback)
 {
 	var scheduler = new Nrf_scheduler(this);
+	scheduler.get_logger().set_devel(this.logger.get_devel());
 	scheduler.add_task(function(callback) {
 		this.nrf_io.ce_lo(callback);
 	});
@@ -370,8 +376,9 @@ Nrf.prototype.send_data = function(data, callback)
 }
 
 var nrf = new Nrf();
-nrf.get_logger().set_devel(Logger.level.debug);
+nrf.get_logger().set_devel(Logger.level.error);
 var scheduler = new Nrf_scheduler(nrf);
+scheduler.get_logger().set_devel(nrf.get_logger().get_devel());
 scheduler.add_task(nrf.init);
 scheduler.add_task(nrf.init_module);
 scheduler.add_task(function(callback) {
@@ -389,7 +396,7 @@ scheduler.add_task(function(callback) {
 	nrf.set_rx_address(rx_addr, callback, 1);
 });
 scheduler.add_task(nrf.init_tx);
-var data = new Buffer([0x42, 0x42, 0x42, 0x42, 0x42, 0xA5, 0x01, 0x74, 0x65, 0x73, 0x74, 0x00]);
+var data = new Buffer([0x42, 0x42, 0x42, 0x42, 0x42, 0xA5, 0x01, 0x00, 0x74, 0x65, 0x73, 0x74, 0x00]);
 var tx_data = new Buffer(32);
 tx_data.fill(0);
 data.copy(tx_data);
