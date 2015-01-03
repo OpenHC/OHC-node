@@ -347,6 +347,8 @@ Nrf.prototype.set_payload_width = function(callback, pipe, width)
 
 Nrf.prototype.send_data = function(data, callback)
 {
+	if(typeof callback != 'function')
+		callback = function() { };
 	var scheduler = new Nrf_scheduler(this);
 	scheduler.get_logger().set_devel(this.logger.get_devel());
 	scheduler.add_task(function(callback) {
@@ -354,7 +356,7 @@ Nrf.prototype.send_data = function(data, callback)
 	});
 	scheduler.add_task(function(callback) {
 		this.init_tx(callback);
-	});
+	}); 	
 	scheduler.add_task(function(nrf) {
 		return function(callback) {
 			this.executor.exec.call(this.executor, Nrf_executor.w_tx_payload, 0, data, function(err, data) {
@@ -403,7 +405,54 @@ data.copy(tx_data);
 scheduler.add_task(function(callback) {
 	nrf.send_data(tx_data, callback);
 });
+
+var readline = require('readline');
+
+var rl = readline.createInterface({
+	input: process.stdin,
+	output: process.stdout
+});
+var logger = new Logger("OHC");
+
+function question()
+{
+	rl.question("State: ", function(answer) {
+		switch(answer.trim().toLowerCase()) {
+			case "on":
+				logger.log("Switching on...");
+				var data = new Buffer([0x42, 0x42, 0x42, 0x42, 0x42, 0xA1, 0x00, 0x00, 0x01]);
+				var tx_data = new Buffer(32);
+				tx_data.fill(0);
+				data.copy(tx_data);
+				nrf.send_data(tx_data);
+				question();
+				break;
+			case "off":
+				logger.log("Switching off...");
+				var data = new Buffer([0x42, 0x42, 0x42, 0x42, 0x42, 0xA1, 0x00, 0x00, 0x00]);
+				var tx_data = new Buffer(32);
+				tx_data.fill(0);
+				data.copy(tx_data);
+				nrf.send_data(tx_data);
+				question();
+				break;
+			case "quit":
+			case "exit":
+			case "close":
+				logger.log("Exiting...");
+				rl.close();
+				process.exit(0);
+				break;
+			default:
+				question();
+		}
+	});
+}
+
 scheduler.run(function() {
+		question();
+});
+/*scheduler.run(function() {
 	nrf.get_all_registers(function() {
 		nrf.print_details();
 		setInterval(function() {
@@ -413,4 +462,4 @@ scheduler.run(function() {
 			});
 		}, 3000);
 	});
-});
+});*/
