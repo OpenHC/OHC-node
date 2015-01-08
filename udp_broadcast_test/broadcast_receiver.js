@@ -30,6 +30,10 @@ var rpc = new Rpc(ohc, addr, port);
 
 var socket = dgram.createSocket('udp4');
 
+var no_auth_methods = new Array();
+no_auth_methods.push(rpc.get_ip);
+no_auth_methods.push(rpc.login);
+
 socket.on('message', function(msg, sender) {
 	console.log('RX BCAST:');
 	console.log('	Message: ' + msg);
@@ -52,8 +56,17 @@ socket.on('message', function(msg, sender) {
 	console.log('	Method: ' + method);
 	if(typeof rpc[method] == 'function')
 	{
-		console.log('	Calling: rpc.' + method);
-		var resp = rpc[method](json);
+		var resp = {sucess: false};
+		if(no_auth_methods.indexOf(rpc[method]) >= 0 || ohc.is_session_token_valid(json.session_token))
+		{
+			console.log('	Calling: rpc.' + method);
+			var resp = rpc[method](json);
+		}
+		else
+		{
+			console.log('	Unauthorized: Acess denied');
+		}
+		resp.login = ohc.is_session_token_valid(json.session_token);
 		if(typeof resp == 'object')
 		{
 			resp = JSON.stringify(resp);

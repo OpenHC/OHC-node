@@ -1,3 +1,4 @@
+#!/opt/node/bin/node
 //possible field types are int, float, onoff, bool, string, slider
 //the types int, float and string are displayed as an edittext field
 //onoff is represented by a switch and hadled as a boolean
@@ -35,3 +36,4 @@ device.addr = new Buffer([0x42, 0x42, 0x42, 0x42, 0x42]);
 device.name_default = 'RC power outlet';
 device.name_custom = '';
 conf['4242424242'] = device;
+console.log(JSON.stringify(conf));

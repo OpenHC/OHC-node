@@ -2,11 +2,15 @@ var fs = require('fs');
 var path = require('path');
 var Config = require('./config');
 var User_util = require('./user_util');
+var Device = require('./device');
 
 function OHC()
 {
 	this.tokens = new Array();
 	this.token_length = 32;
+	this.devices = new Object();
+	this.device_id_by_index = new Array();
+	this.num_devices = 0;
 	this.conf_dir = path.join(__dirname, 'config');
 	if(!fs.existsSync(this.conf_dir))
 	{
@@ -16,13 +20,27 @@ function OHC()
 	this.conffile_users = path.join(__dirname, 'config', 'users.json');
 	this.load_config();
 	this.user_util = new User_util(this);
-	this.user_util.user_add('tobias', 'tobias');
 }
 
 OHC.prototype.load_config = function()
 {
 	this.conf_devices = new Config(this.conffile_devices);
 	this.conf_users = new Config(this.conffile_users);
+}
+
+OHC.prototype.add_device = function(key)
+{
+	var num_devices_old = this.num_devices;
+	if(typeof this.devices[key] == 'undefined')
+		this.num_devices++;
+	this.devices[key] = new Device(this, key);
+	if(this.num_devices > num_devices_old)
+		this.device_id_by_index[num_devices_old] = key;
+}
+
+OHC.prototype.get_device_id = function(index)
+{
+	return this.device_id_by_index[index];
 }
 
 OHC.prototype.gen_random_str = function(len)
@@ -43,5 +61,10 @@ OHC.prototype.login = function(uname, passwd)
 		return token;
 	}
 };
+
+OHC.prototype.is_token_valid = function(token)
+{
+	return this.tokens.indexOf(token) >= 0;
+}
 
 module.exports = OHC;

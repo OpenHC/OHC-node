@@ -3,16 +3,34 @@ function Device(ohc, internal_key)
 	this.ohc = ohc;
 	this.key = internal_key;
 	this.config = ohc.conf_devices[internal_key].config;
+	this.commit_current_value();
 }
 
-Device.field_types = {
-	'int' = 'number',
-	'float' = 'number',
-	'onoff' = 'boolean',
-	'bool' = 'boolean',
-	'string' = 'string',
-	'slider' = 'number'
-};
+Device.field_types = Object();
+Device.field_types['int'] = 'number';
+Device.field_types['float'] = 'number';
+Device.field_types['onoff'] = 'boolean';
+Device.field_types['bool'] = 'boolean';
+Device.field_types['string'] = 'string';
+Device.field_types['slider'] = 'number';
+
+Device.prototype.get_name = function()
+{
+	if(typeof this.config.name_custom !== 'string' || this.config.name_custom.length == 0)
+	{
+		return this.config.name_defaut;
+	}
+	else
+	{
+		return this.config.name_custom;
+	}
+}
+
+Device.prototype.set_name = function(name)
+{
+	this.config.name_custom = name;
+	this.save_config();
+}
 
 Device.prototype.get_num_fields = function()
 {
