@@ -8,11 +8,6 @@ function rpc(ohc, ip_addr, port)
 rpc.prototype.get_ip = function(json)
 {
 	var resp = new Object();
-	resp.success = false;
-	var port = json.port;
-	if(typeof port != 'number')
-		return resp;
-	this.rport = port;
 	resp.method = 'set_ip_address';
 	resp.ip_address = this.ip_addr;
 	resp.port = this.lport;
