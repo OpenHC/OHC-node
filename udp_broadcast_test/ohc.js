@@ -68,11 +68,12 @@ OHC.prototype.login = function(uname, passwd)
 		this.tokens.push(token);
 		return token;
 	}
+	return '';
 };
 
 OHC.prototype.is_session_token_valid = function(token)
 {
-	return this.tokens.indexOf(token) >= 0;
+	return this.tokens.indexOf(token) >= 0 && token.length > 0;
 }
 
 module.exports = OHC;
