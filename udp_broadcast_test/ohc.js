@@ -26,6 +26,14 @@ OHC.prototype.load_config = function()
 {
 	this.conf_devices = new Config(this.conffile_devices);
 	this.conf_users = new Config(this.conffile_users);
+	var device_conf = this.conf_devices.config;
+	for(var key in device_conf)
+	{
+		if(device_conf.hasOwnProperty(key))
+		{
+			this.add_device(key);
+		}
+	}
 }
 
 OHC.prototype.add_device = function(key)
@@ -62,7 +70,7 @@ OHC.prototype.login = function(uname, passwd)
 	}
 };
 
-OHC.prototype.is_token_valid = function(token)
+OHC.prototype.is_session_token_valid = function(token)
 {
 	return this.tokens.indexOf(token) >= 0;
 }

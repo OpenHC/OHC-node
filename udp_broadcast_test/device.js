@@ -2,7 +2,7 @@ function Device(ohc, internal_key)
 {
 	this.ohc = ohc;
 	this.key = internal_key;
-	this.config = ohc.conf_devices[internal_key].config;
+	this.config = ohc.conf_devices.config[internal_key];
 	this.commit_current_value();
 }
 
@@ -18,7 +18,7 @@ Device.prototype.get_name = function()
 {
 	if(typeof this.config.name_custom !== 'string' || this.config.name_custom.length == 0)
 	{
-		return this.config.name_defaut;
+		return this.config.name_default;
 	}
 	else
 	{
@@ -64,7 +64,7 @@ Device.prototype.commit_current_value = function()
 
 Device.prototype.save_config = function()
 {
-	this.ohc.conf_devices[this.key].save();
+	this.ohc.conf_devices.save();
 }
 
 Device.prototype.get_field_value = function(num)
@@ -76,3 +76,5 @@ Device.prototype.get_field = function(num)
 {
 	return this.config[num];
 }
+
+module.exports = Device;
