@@ -39,7 +39,7 @@ Device.prototype.get_num_fields = function()
 
 Device.prototype.set_field_value = function(num, value)
 {
-	var field = this.config[num];
+	var field = this.config.fields[num];
 	if(typeof value != Device.field_types[field.type])
 		return false;
 	if(typeof value != 'boolean')
@@ -54,6 +54,7 @@ Device.prototype.set_field_value = function(num, value)
 		}
 	}
 	field.value = value;
+	this.save_config();
 	return true;
 }
 
@@ -69,12 +70,12 @@ Device.prototype.save_config = function()
 
 Device.prototype.get_field_value = function(num)
 {
-	return this.config[num].value;
+	return this.config.fields[num].value;
 }
 
 Device.prototype.get_field = function(num)
 {
-	return this.config[num];
+	return this.config.fields[num];
 }
 
 module.exports = Device;
