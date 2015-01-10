@@ -1,5 +1,3 @@
-#!/opt/node/bin/node
-
 var util			= require('util');
 var EventEmitter	= require('events').EventEmitter;
 
@@ -88,7 +86,7 @@ Nrf.prototype.get_all_registers = function(callback, regset)
 						callback();
 					});
 				};
-			}(register, nrf));
+			}(register, this));
 		}
 	scheduler.run(function(regset, nrf) {
 		return function() {
@@ -377,6 +375,9 @@ Nrf.prototype.send_data = function(data, callback)
 	scheduler.run(callback);
 }
 
+module.exports = Nrf;
+
+/*
 var nrf = new Nrf();
 nrf.get_logger().set_devel(Logger.level.error);
 var scheduler = new Nrf_scheduler(nrf);
