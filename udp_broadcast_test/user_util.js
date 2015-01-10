@@ -10,6 +10,7 @@ function Util(ohc, salt_len)
 
 Util.prototype.user_add = function(uname, passwd)
 {
+	uname = uname.toLowerCase();
 	if(typeof this.ohc.conf_users.config[uname] !== 'undefined')
 		return false;
 	var conf_user = new User();
@@ -26,6 +27,7 @@ Util.prototype.user_add = function(uname, passwd)
 
 Util.prototype.user_rm = function(uname)
 {
+	uname = uname.toLowerCase();
 	if(typeof this.ohc.conf_users.config[uname] === 'undefined')
 		return false;
 	this.ohc.conf_users.config[uname] = undefined;
@@ -35,11 +37,13 @@ Util.prototype.user_rm = function(uname)
 
 Util.prototype.user_exists = function(uname)
 {
+	uname = uname.toLowerCase();
 	return typeof this.ohc.conf_users.config[uname] !== 'undefined';
 }
 
 Util.prototype.verify_passwd = function(uname, passwd)
 {
+	uname = uname.toLowerCase();
 	var conf_user = this.ohc.conf_users.config[uname];
 	if(typeof conf_user === 'undefined')
 		return false;
@@ -54,6 +58,7 @@ Util.prototype.verify_passwd = function(uname, passwd)
 
 Util.prototype.login = function(uname, passwd)
 {
+	uname = uname.toLowerCase();
 	var conf_user = this.verify_passwd(uname, passwd);
 	if(conf_user !== false)
 	{
@@ -70,6 +75,7 @@ Util.prototype.login = function(uname, passwd)
 
 Util.prototype.change_passwd = function(uname, passwd)
 {
+	uname = uname.toLowerCase();
 	var conf_user = this.ohc.conf_users.config[uname];
 	if(typeof conf_user === 'undefined')
 		return false;
