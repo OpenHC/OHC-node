@@ -59,10 +59,6 @@ socket.on('message', function(msg, sender) {
 	if(typeof rpc[method] == 'function')
 	{
 		var resp = {sucess: false};
-		if(typeof json.transaction_uuid == 'string')
-		{
-			resp.transaction_uuid = json.transaction_uuid;
-		}
 		if(no_auth_methods.indexOf(rpc[method]) >= 0 || ohc.is_session_token_valid(json.session_token))
 		{
 			console.log('	Calling: rpc.' + method);
@@ -71,6 +67,10 @@ socket.on('message', function(msg, sender) {
 		else
 		{
 			console.log('	Unauthorized: Acess denied');
+		}
+		if(typeof json.transaction_uuid == 'string')
+		{
+			resp.transaction_uuid = json.transaction_uuid;
 		}
 		resp.login = ohc.is_session_token_valid(json.session_token);
 		if(typeof resp == 'object')
