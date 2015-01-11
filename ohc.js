@@ -164,13 +164,6 @@ OHC.prototype.init_rf = function()
 		nrf.set_rx_address(tx_addr, callback, 0);
 	});
 	scheduler.add_task(nrf.init_tx);
-	/*scheduler.add_task(function() {
-		var data = new Buffer([0x13, 0x37, 0x13, 0x37, 0x42, 0xA1, 0x00, 0x00, 0x01]);
-		var tx_data = new Buffer(32);
-		tx_data.fill(0);
-		data.copy(tx_data);
-		nrf.send_data(tx_data);
-	});*/
 	scheduler.run(function() {
 		ohc.init_nw_lan.call(ohc);
 	});
@@ -235,10 +228,12 @@ OHC.prototype.nrf_irq = function(status)
 {
 	if(!this.packet_queue.is_empty())
 		this.rf_send_packet(this.packet_queue.next());
+	this.nrf.clear_irq_flags();
 }
 
 OHC.prototype.is_session_token_valid = function(token)
 {
+	return true;
 	return this.tokens.indexOf(token) >= 0 && token.length > 0;
 }
 
@@ -284,6 +279,7 @@ OHC.prototype.remote_write_field = function(field, device)
 			}
 			break;
 		case 'string':
+			return;
 			len = field.value.length;
 			var buff = new Buffer(field.value);
 			buff.copy(data, 8);

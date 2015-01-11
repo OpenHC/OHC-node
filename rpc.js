@@ -83,10 +83,10 @@ rpc.prototype.get_device_name = function(json)
 	return resp;
 }
 
-rpc.prototype.device_set_name = function(json)
+rpc.prototype.set_device_name = function(json)
 {	
 	var resp = new Object();
-	resp.method = 'device_set_name_done';
+	resp.method = 'set_device_name_done';
 	resp.sucess = false;
 	if(typeof json.id !== 'string')
 		return resp;
@@ -95,7 +95,7 @@ rpc.prototype.device_set_name = function(json)
 		return resp;
 	if(typeof json.name !== 'string')
 		return resp;
-	ohc.devices[json.id].set_name(json.name);
+	this.ohc.devices[json.id].set_name(json.name);
 	resp.sucess = true;
 	return resp;
 }
