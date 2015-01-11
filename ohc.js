@@ -233,7 +233,6 @@ OHC.prototype.nrf_irq = function(status)
 
 OHC.prototype.is_session_token_valid = function(token)
 {
-	return true;
 	return this.tokens.indexOf(token) >= 0 && token.length > 0;
 }
 
