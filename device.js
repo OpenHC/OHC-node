@@ -3,6 +3,7 @@ function Device(ohc, internal_key)
 	this.ohc = ohc;
 	this.key = internal_key;
 	this.config = ohc.conf_devices.config[internal_key];
+	this.last_value = undefined;
 }
 
 Device.field_types = Object();
@@ -54,13 +55,12 @@ Device.prototype.set_field_value = function(num, value)
 	}
 	field.value = value;
 	this.commit_current_value(num);
-	this.save_config();
 	return true;
 }
 
 Device.prototype.commit_current_value = function(num)
 {
-	this.ohc.remote_write_field(this.get_field(num), this);
+	this.ohc.remote_write_field(this.key, this.get_field(num), this);
 }
 
 Device.prototype.save_config = function()

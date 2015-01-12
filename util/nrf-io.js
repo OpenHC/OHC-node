@@ -32,9 +32,7 @@ function Nrf_io(pin_ce, pin_csn, pin_irq)
 			ioready = true;
 			nrf_io.logger.log("GPIO setup sucessful", Logger.level.info);
 			nrf_io.io.listen_state(nrf_io.IRQ, false, function() {
-				return function() {
-					nrf_io.irq.call(nrf_io);
-				}
+				nrf_io.irq.call(nrf_io);
 			});
 			if(typeof callback == 'function')
 				callback();
@@ -76,7 +74,7 @@ Nrf_io.prototype.csn_lo = function(callback)
 
 Nrf_io.prototype.irq = function()
 {
-	logger.log('IRQ', Logger.level.debug);
+	this.logger.log('IRQ', Logger.level.debug);
 	this.irq_callback();
 }
 

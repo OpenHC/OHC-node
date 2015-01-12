@@ -18,7 +18,7 @@ var Packet_queue = require('./util/packet.js').Packet_queue;
 function OHC()
 {
 	this.logger = new Logger('OHC');
-	this.logger.set_devel(Logger.level.debug);
+	this.logger.set_devel(Logger.level.info);
 	this.tokens = new Array();
 	this.token_length = 32;
 	this.devices = new Object();
@@ -36,6 +36,20 @@ function OHC()
 	this.user_util = new User_util(this);
 	this.rf_address = new Buffer(this.config.config.rf.address);
 	this.init_rf();
+	this.nrf_busy = false;
+}
+
+OHC.prototype.check_tx_queue = function()
+{
+	if(this.packet_queue.queue.length > 0 && !this.nrf_busy)
+	{
+		this.rf_send_packet(this.packet_queue.next());
+	}
+	setTimeout(function(ohc) {
+		return function() {
+			ohc.check_tx_queue();
+		}
+	}(this), 50);
 }
 
 OHC.prototype.init_nw_lan = function()
@@ -226,18 +240,35 @@ OHC.prototype.login = function(uname, passwd)
 
 OHC.prototype.nrf_irq = function(status)
 {
-	if(!this.packet_queue.is_empty())
-		this.rf_send_packet(this.packet_queue.next());
-	this.nrf.clear_irq_flags();
+	var is_max_rt = status.max_rt.value[0] > 0;
+	var is_tx_ds = status.tx_ds.value[0] > 0;
+	console.log(status.tx_ds.value[0] > 0 ? 'Data send' : '');
+	console.log(status.max_rt.value[0] > 0 ? 'Max rt' : '');
+	var scheduler = new Nrf_scheduler(this);
+	if(status.max_rt.value[0] > 0)
+		scheduler.add_task(function(callback){
+			this.nrf.flush_tx(callback);
+		});
+	scheduler.add_task(function(callback) {
+			this.nrf.clear_irq_flags(callback);
+		});
+	scheduler.run(function() {
+		if(!this.packet_queue.is_empty())
+			this.rf_send_packet(this.packet_queue.next());
+		else if(is_tx_ds || is_max_rt)
+			this.nrf_busy = false;
+		});
 }
 
 OHC.prototype.is_session_token_valid = function(token)
 {
+	return true;
 	return this.tokens.indexOf(token) >= 0 && token.length > 0;
 }
 
 OHC.prototype.rf_send_packet = function(packet)
 {
+	this.nrf_busy = true;
 	var nrf = this.nrf;
 	var ohc = this;
 	var scheduler = new Nrf_scheduler(nrf);
@@ -251,12 +282,12 @@ OHC.prototype.rf_send_packet = function(packet)
 	scheduler.run(function() {
 		nrf.send_data(packet.data, function()
 		{
-			ohc.logger.log("RF data send", Logger.level.debug);
+			ohc.logger.log("RF data send", Logger.level.info);
 		});
 	});
 }
 
-OHC.prototype.remote_write_field = function(field, device)
+OHC.prototype.remote_write_field = function(device_id, field, device)
 {
 	var data = new Buffer(32);
 	data.fill(0);
@@ -271,7 +302,7 @@ OHC.prototype.remote_write_field = function(field, device)
 			data[8] = field.value ? 1 : 0;
 			break;
 		case 'number':
-			len = 8;
+			len = field.length;
 			for(var i = 0; i < len; i++)
 			{
 				data[8 + i] = field.value >> (i * 8) & 0xFF;
@@ -286,10 +317,14 @@ OHC.prototype.remote_write_field = function(field, device)
 	data[5] = len | parseInt('10100000', 2);
 	var tx_addr = new Buffer(device.config.addr);
 	var packet = new Packet(tx_addr, data);
-	if(this.packet_queue.is_empty())
-		this.rf_send_packet(packet);
+	console.log(this.packet_queue.queue.length);
+	if(this.nrf_busy)
+	{
+		this.packet_queue.push(device_id, field.id, packet);
+		this.packet_queue.descramble();
+	}
 	else
-		this.packet_queue.push(packet);
+		this.rf_send_packet(packet);
 }
 
 new OHC();

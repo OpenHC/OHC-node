@@ -33,7 +33,7 @@ Scheduler.prototype.run_next = function()
 		}(this));
 	else
 	{
-		this.callback();
+		this.callback.call(this.env);
 		this.logger.log('Scheduler execution finished', Logger.level.debug);
 	}
 }

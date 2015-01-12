@@ -2,11 +2,13 @@ var gpio	= require('rpi-gpio');
 var gpiomap	= require('./gpio-pinmap');
 var Logger	= require('./logger');
 
-gpio.setPollFrequency(100);
+gpio.setPollFrequency(20);
 
 function IO()
 {
 	this.logger = new Logger('IO');
+	this.last_state = new Object();
+	this.locked = false;
 }
 
 IO.prototype.get_logger = function()
@@ -28,20 +30,39 @@ IO.prototype.read_pin = function(pin, callback)
 	});
 }
 
-IO.prototype.listen_change = function(pin, callback)
-{
-	gpio.on('change', function(pin_, state) {
-			if(pin_ == pin)
-				callback(state);
-	});
-}
-
 IO.prototype.listen_state = function(pin, state, callback)
 {
-	gpio.on('change', function(pin_, state_) {
-			if(pin_ == pin && state_ == state)
+	this.read_pin(pin, function(io, pin, listen_state, listen_callback) {
+		return function(err, state) {
+			/*setInterval(function() {
+				io.read_pin(pin, function(err, state) {
+					console.log("IRQ state: " + state);
+				});
+			}, 1000);*/
+			io.last_state[pin] = state;
+			setInterval(function() {
+				io.read_pin(pin, function(err, state) {
+					if(state != io.last_state[pin])
+					{
+						if(state == listen_state)
+						{
+							console.log("~~IRQ~~");
+							listen_callback();
+							io.last_state[pin] = state;
+						}
+						else
+							io.last_state[pin] = state;
+					}
+
+				});
+			}, 50);
+		}
+	}(this, pin, state, callback));
+	/*gpio.on('change', function(pin_, value) {
+			console.log("State of pin " + pin_ + " changed to " + value);
+			if(pin_ == pin && value == state)
 				callback();
-	});
+	});*/
 }
 
 function IO_pin(pin, mode)

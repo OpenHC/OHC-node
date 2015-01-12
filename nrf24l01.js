@@ -10,6 +10,8 @@ var Nrf_scheduler	= require('./util/nrf-task-scheduler');
 function Nrf()
 {
 	this.logger = new Logger('NRF');
+	EventEmitter.call(this);
+	this.transmitting = false;
 }
 
 util.inherits(Nrf, EventEmitter);
@@ -40,6 +42,11 @@ Nrf.prototype.init = function(callback, spidev, gpio_ce, gpio_csn, gpio_irq)
 Nrf.prototype.get_logger = function()
 {
 	return this.logger;
+}
+
+Nrf.prototype.is_transmitting = function()
+{
+	return this.transmitting;
 }
 
 
@@ -150,20 +157,20 @@ Nrf.prototype.get_register = function(register, callback)
 
 Nrf.prototype.irq_callback = function()
 {
-	this.logger.log('Received IRQ', Logger.level.debug);
+	this.logger.log('Received IRQ', Logger.level.info);
 	var buff = new Buffer(1);
 	buff.fill(0);
-	this.executor.exec.call(this.executor, Nrf_executor.nop, 0, buff, function(nrf) {
+	this.get_register(this.nrf_regset.status, function(nrf) {
 		return function(err, data) {
 			if(err)
 				nrf.logger.log('Failed to get status');
 			else
 			{
-				nrf.nrf_regset.status.set_value(data);
-				if(!nrf.emitEvent('irq', nrf.nrf_regset.status))
+				if(!nrf.emit('irq', nrf.nrf_regset.status))
 				{
 					nrf.clear_irq_flags();
 				}
+				nrf.transmitting = false;
 			}
 		}
 	}(this));
@@ -193,7 +200,7 @@ Nrf.prototype.init_module = function(callback)
 	this.nrf_regset.rf_setup.rf_dr_high.set_value(0);
 	this.nrf_regset.rx_pw_p0.rx_pw_p0.set_value(32);
 	this.nrf_regset.rx_pw_p1.rx_pw_p1.set_value(32);
-	this.nrf_regset.setup_retr.ard.set_value(7);
+	this.nrf_regset.setup_retr.ard.set_value(15);
 	var scheduler = new Nrf_scheduler(this);
 	scheduler.get_logger().set_devel(this.logger.get_devel());
 	scheduler.add_task(function(callback) {
@@ -345,6 +352,7 @@ Nrf.prototype.set_payload_width = function(callback, pipe, width)
 
 Nrf.prototype.send_data = function(data, callback)
 {
+	this.transmitting = true;
 	if(typeof callback != 'function')
 		callback = function() { };
 	var scheduler = new Nrf_scheduler(this);
@@ -376,91 +384,3 @@ Nrf.prototype.send_data = function(data, callback)
 }
 
 module.exports = Nrf;
-
-/*
-var nrf = new Nrf();
-nrf.get_logger().set_devel(Logger.level.error);
-var scheduler = new Nrf_scheduler(nrf);
-scheduler.get_logger().set_devel(nrf.get_logger().get_devel());
-scheduler.add_task(nrf.init);
-scheduler.add_task(nrf.init_module);
-scheduler.add_task(function(callback) {
-	nrf.set_channel(42, callback);
-});
-var tx_addr = new Buffer([0x42, 0x42, 0x42, 0x42, 0x42]);
-scheduler.add_task(function(callback) {
-	nrf.set_tx_address(tx_addr, callback);
-});
-scheduler.add_task(function(callback) {
-	nrf.set_rx_address(tx_addr, callback, 0);
-});
-var rx_addr = new Buffer([0x13, 0x37, 0x13, 0x37, 0x42]);
-scheduler.add_task(function(callback) {
-	nrf.set_rx_address(rx_addr, callback, 1);
-});
-scheduler.add_task(nrf.init_tx);
-var data = new Buffer([0x42, 0x42, 0x42, 0x42, 0x42, 0xA5, 0x01, 0x00, 0x74, 0x65, 0x73, 0x74, 0x00]);
-var tx_data = new Buffer(32);
-tx_data.fill(0);
-data.copy(tx_data);
-scheduler.add_task(function(callback) {
-	nrf.send_data(tx_data, callback);
-});
-
-var readline = require('readline');
-
-var rl = readline.createInterface({
-	input: process.stdin,
-	output: process.stdout
-});
-var logger = new Logger("OHC");
-
-function question()
-{
-	rl.question("State: ", function(answer) {
-		switch(answer.trim().toLowerCase()) {
-			case "on":
-				logger.log("Switching on...");
-				var data = new Buffer([0x42, 0x42, 0x42, 0x42, 0x42, 0xA1, 0x00, 0x00, 0x01]);
-				var tx_data = new Buffer(32);
-				tx_data.fill(0);
-				data.copy(tx_data);
-				nrf.send_data(tx_data);
-				question();
-				break;
-			case "off":
-				logger.log("Switching off...");
-				var data = new Buffer([0x42, 0x42, 0x42, 0x42, 0x42, 0xA1, 0x00, 0x00, 0x00]);
-				var tx_data = new Buffer(32);
-				tx_data.fill(0);
-				data.copy(tx_data);
-				nrf.send_data(tx_data);
-				question();
-				break;
-			case "quit":
-			case "exit":
-			case "close":
-				logger.log("Exiting...");
-				rl.close();
-				process.exit(0);
-				break;
-			default:
-				question();
-		}
-	});
-}
-
-scheduler.run(function() {
-		question();
-});
-/*scheduler.run(function() {
-	nrf.get_all_registers(function() {
-		nrf.print_details();
-		setInterval(function() {
-			var regmap = new Nrf_register();
-			nrf.get_register(regmap.status, function(err, data) {
-				console.log(util.inspect(regmap.status));
-			});
-		}, 3000);
-	});
-});*/
