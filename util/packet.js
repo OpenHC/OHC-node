@@ -39,7 +39,6 @@ Packet_queue.prototype.descramble = function()
 						if(index >= 0)
 						{
 							this.queue.splice(index, 1);
-							console.log("Removing element " + index);
 						}
 					}
 				}

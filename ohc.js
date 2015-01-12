@@ -68,7 +68,7 @@ OHC.prototype.init_nw_lan = function()
 		});
 	});
 
-	console.log("I'm @ " + addr);
+	this.logger.log("I'm @ " + addr, Logger.level.info);
 
 	var port = this.config.config.lan.port;
 	var rpc = new Rpc(this, addr, port);
@@ -147,7 +147,7 @@ OHC.prototype.init_nw_lan = function()
 	socket.on('listening', function() {
 		(function() {
 			var addr = socket.address();
-			console.log('Socket bound to: ' + addr.address + ':' + addr.port);
+			this.logger.log('Socket bound to: ' + addr.address + ':' + addr.port, Logger.level.info);
 		}).call(ohc);
 	});
 
@@ -242,8 +242,6 @@ OHC.prototype.nrf_irq = function(status)
 {
 	var is_max_rt = status.max_rt.value[0] > 0;
 	var is_tx_ds = status.tx_ds.value[0] > 0;
-	console.log(status.tx_ds.value[0] > 0 ? 'Data send' : '');
-	console.log(status.max_rt.value[0] > 0 ? 'Max rt' : '');
 	var scheduler = new Nrf_scheduler(this);
 	if(status.max_rt.value[0] > 0)
 		scheduler.add_task(function(callback){
@@ -282,7 +280,7 @@ OHC.prototype.rf_send_packet = function(packet)
 	scheduler.run(function() {
 		nrf.send_data(packet.data, function()
 		{
-			ohc.logger.log("RF data send", Logger.level.info);
+			ohc.logger.log("RF data send", Logger.level.debug);
 		});
 	});
 }
@@ -317,7 +315,6 @@ OHC.prototype.remote_write_field = function(device_id, field, device)
 	data[5] = len | parseInt('10100000', 2);
 	var tx_addr = new Buffer(device.config.addr);
 	var packet = new Packet(tx_addr, data);
-	console.log(this.packet_queue.queue.length);
 	if(this.nrf_busy)
 	{
 		this.packet_queue.push(device_id, field.id, packet);

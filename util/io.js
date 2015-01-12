@@ -34,11 +34,6 @@ IO.prototype.listen_state = function(pin, state, callback)
 {
 	this.read_pin(pin, function(io, pin, listen_state, listen_callback) {
 		return function(err, state) {
-			/*setInterval(function() {
-				io.read_pin(pin, function(err, state) {
-					console.log("IRQ state: " + state);
-				});
-			}, 1000);*/
 			io.last_state[pin] = state;
 			setInterval(function() {
 				io.read_pin(pin, function(err, state) {
@@ -46,7 +41,6 @@ IO.prototype.listen_state = function(pin, state, callback)
 					{
 						if(state == listen_state)
 						{
-							console.log("~~IRQ~~");
 							listen_callback();
 							io.last_state[pin] = state;
 						}
@@ -58,11 +52,6 @@ IO.prototype.listen_state = function(pin, state, callback)
 			}, 50);
 		}
 	}(this, pin, state, callback));
-	/*gpio.on('change', function(pin_, value) {
-			console.log("State of pin " + pin_ + " changed to " + value);
-			if(pin_ == pin && value == state)
-				callback();
-	});*/
 }
 
 function IO_pin(pin, mode)
