@@ -25,7 +25,7 @@ function OHC()
 	this.device_id_by_index = new Array();
 	this.num_devices = 0;
 	var conf_dir = path.join(__dirname, 'config');
-	if(!fs.existsSync(conf_dir))
+	if(!fs.existsSync(conf_dir)) //Crreate config dir if not exists
 	{
 		fs.mkdirSync(conf_dir, 0750);
 	}
@@ -39,7 +39,7 @@ function OHC()
 	this.nrf_busy = false;
 }
 
-OHC.prototype.check_tx_queue = function()
+OHC.prototype.check_tx_queue = function() //Helper function to resume queue if interrupt is missed for some reason
 {
 	if(this.packet_queue.queue.length > 0 && !this.nrf_busy)
 	{
@@ -52,7 +52,7 @@ OHC.prototype.check_tx_queue = function()
 	}(this), 50);
 }
 
-OHC.prototype.init_nw_lan = function()
+OHC.prototype.init_nw_lan = function() //Sets up udp listener for broadcasts and json rpcs
 {
 	var interfaces = os.networkInterfaces();
 
@@ -64,7 +64,7 @@ OHC.prototype.init_nw_lan = function()
 			{
 				return;
 			}
-			addr = iface.address
+			addr = iface.address; //Get address of ethernet interface
 		});
 	});
 
@@ -79,7 +79,7 @@ OHC.prototype.init_nw_lan = function()
 	no_auth_methods.push(rpc.login);
 
 	var ohc = this;
-	socket.on('message', function(msg, sender) {
+	socket.on('message', function(msg, sender) { //Listen for udp packets
 		(function(msg, sender) {
 			this.logger.log('RX BCAST:', Logger.level.debug);
 			this.logger.log('	Message: ' + msg, Logger.level.debug);
@@ -89,7 +89,7 @@ OHC.prototype.init_nw_lan = function()
 			{
 				json = JSON.parse(msg);
 			}
-			catch(ex)
+			catch(ex) //Prevent gateway from crashing due to invalid input
 			{
 				this.logger.log('	Invalid json: ' + ex);
 				return;
@@ -99,12 +99,14 @@ OHC.prototype.init_nw_lan = function()
 			var method = json.method;
 			if(typeof method == 'undefined')
 				return;
+			//Check if response port is valid
 			if(typeof json.rport !== 'number' || json.rport < 1 || json.rport > 65535)
 				return;
 			this.logger.log('	Method: ' + method, Logger.level.debug);
 			if(typeof rpc[method] == 'function')
 			{
 				var resp = {sucess: false};
+				//Check if method requires authorization and check if client is authorized
 				if(no_auth_methods.indexOf(rpc[method]) >= 0 || this.is_session_token_valid(json.session_token))
 				{
 					this.logger.log('	Calling: rpc.' + method, Logger.level.debug);
@@ -114,13 +116,16 @@ OHC.prototype.init_nw_lan = function()
 				{
 					this.logger.log('	Unauthorized: Acess denied');
 				}
+				//Include transaction id in response if request is a transaction
 				if(typeof json.transaction_uuid == 'string')
 				{
 					resp.transaction_uuid = json.transaction_uuid;
 				}
+				//Inform client if its login session is still valid
 				resp.login = this.is_session_token_valid(json.session_token);
 				if(typeof resp == 'object')
 				{
+					//Return response as a stringified json object
 					resp = JSON.stringify(resp);
 					this.logger.log('	Response: ' + resp, Logger.level.debug);
 					resp = new Buffer(resp);
@@ -154,6 +159,7 @@ OHC.prototype.init_nw_lan = function()
 	socket.bind(port);
 }
 
+//Setup wireless module
 OHC.prototype.init_rf = function()
 {
 	var nrf = new Nrf();
@@ -161,6 +167,7 @@ OHC.prototype.init_rf = function()
 	var scheduler = new Nrf_scheduler(nrf);
 	var ohc = this;
 	scheduler.get_logger().set_devel(nrf.get_logger().get_devel());
+	//write sensible defaults to nrf registers
 	scheduler.add_task(nrf.init);
 	scheduler.add_task(nrf.init_module);
 	scheduler.add_task(function(callback) {
@@ -185,6 +192,7 @@ OHC.prototype.init_rf = function()
 	nrf.on('irq', function(status) {
 		ohc.nrf_irq.call(ohc, status);
 	});
+	//Initialize queue for packets transmitted via nrf
 	ohc.packet_queue = new Packet_queue();
 }
 
@@ -194,6 +202,7 @@ OHC.prototype.load_config = function()
 	this.conf_users = new Config(this.conffile_users);
 	this.config = new Config(this.conffile);
 	var device_conf = this.conf_devices.config;
+	//Store devices sorted by their address
 	for(var key in device_conf)
 	{
 		if(device_conf.hasOwnProperty(key))
@@ -240,6 +249,7 @@ OHC.prototype.login = function(uname, passwd)
 
 OHC.prototype.nrf_irq = function(status)
 {
+	//Check status flags
 	var is_max_rt = status.max_rt.value[0] > 0;
 	var is_tx_ds = status.tx_ds.value[0] > 0;
 	var scheduler = new Nrf_scheduler(this);
@@ -251,8 +261,10 @@ OHC.prototype.nrf_irq = function(status)
 			this.nrf.clear_irq_flags(callback);
 		});
 	scheduler.run(function() {
+		//Send next packet
 		if(!this.packet_queue.is_empty())
 			this.rf_send_packet(this.packet_queue.next());
+		//Unset busy flag if module indicates data has been processed
 		else if(is_tx_ds || is_max_rt)
 			this.nrf_busy = false;
 		});
@@ -263,6 +275,7 @@ OHC.prototype.is_session_token_valid = function(token)
 	return this.tokens.indexOf(token) >= 0 && token.length > 0;
 }
 
+//Set tx address and send data
 OHC.prototype.rf_send_packet = function(packet)
 {
 	this.nrf_busy = true;
@@ -284,14 +297,17 @@ OHC.prototype.rf_send_packet = function(packet)
 	});
 }
 
+//Set field on remote device
 OHC.prototype.remote_write_field = function(device_id, field, device)
 {
 	var data = new Buffer(32);
 	data.fill(0);
 	this.rf_address.copy(data);
+	//Write field index to packet
 	data[6] = field.id & 0xFF;
 	data[7] = field.id >> 8 & 0xFF;
 	var len = 0;
+	//Shift in data depending on the fields data type
 	switch(Device.field_types[field.type])
 	{
 		case 'boolean':
@@ -311,12 +327,15 @@ OHC.prototype.remote_write_field = function(device_id, field, device)
 			var buff = new Buffer(field.value);
 			buff.copy(data, 8);
 	}
+	//Include content size information and set static flags (beta)
 	data[5] = len | parseInt('10100000', 2);
 	var tx_addr = new Buffer(device.config.addr);
 	var packet = new Packet(tx_addr, data);
+	//Enqueue data if module is busy
 	if(this.nrf_busy)
 	{
 		this.packet_queue.push(device_id, field.id, packet);
+		//Drop redundant packets that set the same field
 		this.packet_queue.descramble();
 	}
 	else
