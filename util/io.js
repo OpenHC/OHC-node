@@ -34,9 +34,19 @@ IO.prototype.listen_state = function(pin, state, callback)
 {
 	this.read_pin(pin, function(io, pin, listen_state, listen_callback) {
 		return function(err, state) {
+			if(err)
+			{
+				io.logger.log("Failed to get initial pin state");
+				return;
+			}
 			io.last_state[pin] = state;
 			setInterval(function() {
 				io.read_pin(pin, function(err, state) {
+					if(err)
+					{
+						io.logger.log("Failed to get pin state");
+						return;
+					}
 					if(state != io.last_state[pin])
 					{
 						if(state == listen_state)

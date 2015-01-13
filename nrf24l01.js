@@ -157,7 +157,7 @@ Nrf.prototype.get_register = function(register, callback)
 
 Nrf.prototype.irq_callback = function()
 {
-	this.logger.log('Received IRQ', Logger.level.info);
+	this.logger.log('Received IRQ', Logger.level.debug);
 	var buff = new Buffer(1);
 	buff.fill(0);
 	this.get_register(this.nrf_regset.status, function(nrf) {
