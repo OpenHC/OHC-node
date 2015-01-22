@@ -6,7 +6,7 @@ var dgram = require('dgram');
 var os = require('os');
 
 var Logger = require('./util/logger');
-var Rpc = require('./rpc');
+var Rpc_udp = require('./rpc_udp');
 var Config = require('./config');
 var User_util = require('./util/user');
 var Device = require('./device');
@@ -71,12 +71,12 @@ OHC.prototype.init_nw_lan = function() //Sets up udp listener for broadcasts and
 	this.logger.log("I'm @ " + addr, Logger.level.info);
 
 	var port = this.config.config.lan.port;
-	var rpc = new Rpc(this, addr, port);
+	var rpc_udp = new Rpc_udp(this, addr, port);
 	var socket = dgram.createSocket('udp4');
 
 	var no_auth_methods = new Array();
-	no_auth_methods.push(rpc.get_ip);
-	no_auth_methods.push(rpc.login);
+	no_auth_methods.push(rpc_udp.get_ip);
+	no_auth_methods.push(rpc_udp.login);
 
 	var ohc = this;
 	socket.on('message', function(msg, sender) { //Listen for udp packets
@@ -103,14 +103,14 @@ OHC.prototype.init_nw_lan = function() //Sets up udp listener for broadcasts and
 			if(typeof json.rport !== 'number' || json.rport < 1 || json.rport > 65535)
 				return;
 			this.logger.log('	Method: ' + method, Logger.level.debug);
-			if(typeof rpc[method] == 'function')
+			if(typeof rpc_udp[method] == 'function')
 			{
 				var resp = {sucess: false};
 				//Check if method requires authorization and check if client is authorized
-				if(no_auth_methods.indexOf(rpc[method]) >= 0 || this.is_session_token_valid(json.session_token))
+				if(no_auth_methods.indexOf(rpc_udp[method]) >= 0 || this.is_session_token_valid(json.session_token))
 				{
 					this.logger.log('	Calling: rpc.' + method, Logger.level.debug);
-					var resp = rpc[method](json);
+					var resp = rpc_udp[method](json);
 				}
 				else
 				{
