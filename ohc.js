@@ -168,7 +168,6 @@ OHC.prototype.init_nw_tcp = function() //Sets up up tcp listener for rpcs
 	var server = net.createServer();
 
 	var no_auth_methods = new Array();
-	no_auth_methods.push(rpc_tcp.get_ip);
 	no_auth_methods.push(rpc_tcp.login);
 
 	var ohc = this;
