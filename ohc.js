@@ -3,10 +3,12 @@
 var fs = require('fs');
 var path = require('path');
 var dgram = require('dgram');
+var net = require('net');
 var os = require('os');
 
 var Logger = require('./util/logger');
 var Rpc_udp = require('./rpc_udp');
+var Rpc_tcp = require('./rpc_tcp');
 var Config = require('./config');
 var User_util = require('./util/user');
 var Device = require('./device');
@@ -52,7 +54,7 @@ OHC.prototype.check_tx_queue = function() //Helper function to resume queue if i
 	}(this), 50);
 }
 
-OHC.prototype.init_nw_lan = function() //Sets up udp listener for broadcasts and json rpcs
+OHC.prototype.init_nw_udp = function() //Sets up udp listener for broadcasts and json rpcs
 {
 	var interfaces = os.networkInterfaces();
 
@@ -70,7 +72,7 @@ OHC.prototype.init_nw_lan = function() //Sets up udp listener for broadcasts and
 
 	this.logger.log("I'm @ " + addr, Logger.level.info);
 
-	var port = this.config.config.lan.port;
+	var port = this.config.config.network.port_udp;
 	var rpc_udp = new Rpc_udp(this, addr, port);
 	var socket = dgram.createSocket('udp4');
 
@@ -135,7 +137,7 @@ OHC.prototype.init_nw_lan = function() //Sets up udp listener for broadcasts and
 							if(err)
 								this.logger.log("[SOCKET_TX] ERROR: " + err);
 							else
-								this.logger.log("	Packet send", Logger.level.debug);
+								this.logger.log("	Packet sent", Logger.level.debug);
 						}).call(ohc, err, data);
 					});
 				}
@@ -158,6 +160,100 @@ OHC.prototype.init_nw_lan = function() //Sets up udp listener for broadcasts and
 
 	socket.bind(port);
 }
+
+OHC.prototype.init_nw_tcp = function() //Sets up up tcp listener for rpcs
+{
+	var port = this.config.config.network.port_tcp;
+	var rpc_tcp = new Rpc_tcp(this);
+	var server = net.createServer();
+
+	var no_auth_methods = new Array();
+	no_auth_methods.push(rpc_tcp.get_ip);
+	no_auth_methods.push(rpc_tcp.login);
+
+	var ohc = this;
+	server.on('connection', function(socket) {
+		socket.setEncoding('utf8');
+		socket.on('data', function(msg, sender) {
+			(function(msg, sender) {
+				this.logger.log('RX TCP:', Logger.level.debug);
+				this.logger.log('	Message: ' + msg, Logger.level.debug);
+				this.logger.log('	Sender: ' + sender, Logger.level.debug);
+				var json;
+				try
+				{
+					json = JSON.parse(msg);
+				}
+				catch(ex) //Prevent gateway from crashing due to invalid input
+				{
+					this.logger.log('	Invalid json: ' + ex);
+					return;
+				}
+				if(typeof json == 'undefined' || json == null)
+					return;
+				var method = json.method;
+				if(typeof method == 'undefined')
+					return;
+				//Check if response port is valid
+				if(typeof json.rport !== 'number' || json.rport < 1 || json.rport > 65535)
+					return;
+				this.logger.log('	Method: ' + method, Logger.level.debug);
+				if(typeof rpc_tcp[method] == 'function')
+				{
+					var resp = {sucess: false};
+					//Check if method requires authorization and check if client is authorized
+					if(no_auth_methods.indexOf(rpc_tcp[method]) >= 0 || this.is_session_token_valid(json.session_token))
+					{
+						this.logger.log('	Calling: rpc.' + method, Logger.level.debug);
+						var resp = rpc_tcp[method](json);
+					}
+					else
+					{
+						this.logger.log('	Unauthorized: Acess denied');
+					}
+					//Include transaction id in response if request is a transaction
+					if(typeof json.transaction_uuid == 'string')
+					{
+						resp.transaction_uuid = json.transaction_uuid;
+					}
+					//Inform client if its login session is still valid
+					resp.login = this.is_session_token_valid(json.session_token);
+					if(typeof resp == 'object')
+					{
+						//Return response as a stringified json object
+						resp = JSON.stringify(resp);
+						this.logger.log('	Response: ' + resp, Logger.level.debug);
+						resp = new Buffer(resp);
+						socket.send(resp, 0, resp.length, json.rport, sender, function(err, data) {
+							(function(err, data)
+							{
+								if(err)
+									this.logger.log("[SOCKET_TX] ERROR: " + err);
+								else
+									this.logger.log("	Data sent", Logger.level.debug);
+							}).call(ohc, err, data);
+						});
+					}
+				}
+			}).call(ohc, msg, socket.remoteAddress);
+		});
+
+		socket.on('error', function(err) {
+			(function(err) {
+				this.logger.log("[SOCKET] ERROR: " + err);
+			}).call(ohc, err);
+		});
+
+		socket.on('connect', function() {
+			(function() {
+				this.logger.log('TCP socket bound to: ' + socket.remoteAddress + ':' + socket.remotePort, Logger.level.info);
+			}).call(ohc);
+		});
+	});
+
+	server.listen(port);
+}
+
 
 //Setup wireless module
 OHC.prototype.init_rf = function()
@@ -185,8 +281,12 @@ OHC.prototype.init_rf = function()
 		nrf.set_rx_address(tx_addr, callback, 0);
 	});
 	scheduler.add_task(nrf.init_tx);
+	scheduler.add_task(function(callback) {
+		ohc.init_nw_tcp.call(ohc);
+		callback();
+	});
 	scheduler.run(function() {
-		ohc.init_nw_lan.call(ohc);
+		ohc.init_nw_udp.call(ohc);
 	});
 	this.nrf = nrf;
 	nrf.on('irq', function(status) {
@@ -292,7 +392,7 @@ OHC.prototype.rf_send_packet = function(packet)
 	scheduler.run(function() {
 		nrf.send_data(packet.data, function()
 		{
-			ohc.logger.log("RF data send", Logger.level.debug);
+			ohc.logger.log("RF data sent", Logger.level.debug);
 		});
 	});
 }

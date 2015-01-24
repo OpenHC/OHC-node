@@ -1,6 +1,7 @@
 {
-	"lan" : {
-		"port" : 4242
+	"network" : {
+		"port_udp" : 4242,
+		"port_tcp" : 4243
 	},
 	"rf" : {
 		"channel" : 42,
