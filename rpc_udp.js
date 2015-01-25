@@ -3,6 +3,9 @@ function rpc(ohc, ip_addr, port)
 	this.ohc = ohc;
 	this.lport = port;
 	this.ip_addr = ip_addr;
+	this.no_auth_methods = new Array();
+	this.no_auth_methods.push(this.get_ip);
+	this.no_auth_methods.push(this.login);
 }
 
 rpc.prototype.get_ip = function(json)

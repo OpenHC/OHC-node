@@ -1,6 +1,8 @@
 function rpc(ohc)
 {
 	this.ohc = ohc;
+	this.no_auth_methods = new Array();
+	this.no_auth_methods.push(this.login);
 }
 
 rpc.prototype.login = function(json)
