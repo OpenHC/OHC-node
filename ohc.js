@@ -95,50 +95,24 @@ OHC.prototype.init_nw_udp = function() //Sets up udp listener for broadcasts and
 			}
 			if(typeof json == 'undefined' || json == null)
 				return;
-			var method = json.method;
-			if(typeof method == 'undefined')
-				return;
 			//Check if response port is valid
 			if(typeof json.rport !== 'number' || json.rport < 1 || json.rport > 65535)
 				return;
-			this.logger.log('	Method: ' + method, Logger.level.debug);
-			if(typeof rpc_udp[method] == 'function')
-			{
-				var resp = {sucess: false};
-				//Check if method requires authorization and check if client is authorized
-				if(rpc_upd.no_auth_methods.indexOf(rpc_udp[method]) >= 0 || this.is_session_token_valid(json.session_token))
+			var resp = this.exec_json_rpc(json, rpc_udp);
+			if(typeof resp !== 'object')
+				return;
+			resp = JSON.stringify(resp);
+			this.logger.log('	Response: ' + resp, Logger.level.debug);
+			resp = new Buffer(resp);
+			socket.send(resp, 0, resp.length, json.rport, sender.address, function(err, data) {
+				(function(err, data)
 				{
-					this.logger.log('	Calling: rpc.' + method, Logger.level.debug);
-					var resp = rpc_udp[method](json);
-				}
-				else
-				{
-					this.logger.log('	Unauthorized: Acess denied');
-				}
-				//Include transaction id in response if request is a transaction
-				if(typeof json.transaction_uuid == 'string')
-				{
-					resp.transaction_uuid = json.transaction_uuid;
-				}
-				//Inform client if its login session is still valid
-				resp.login = this.is_session_token_valid(json.session_token);
-				if(typeof resp == 'object')
-				{
-					//Return response as a stringified json object
-					resp = JSON.stringify(resp);
-					this.logger.log('	Response: ' + resp, Logger.level.debug);
-					resp = new Buffer(resp);
-					socket.send(resp, 0, resp.length, json.rport, sender.address, function(err, data) {
-						(function(err, data)
-						{
-							if(err)
-								this.logger.log("[SOCKET_TX] ERROR: " + err);
-							else
-								this.logger.log("	Packet sent", Logger.level.debug);
-						}).call(ohc, err, data);
-					});
-				}
-			}
+					if(err)
+						this.logger.log("[SOCKET_TX] ERROR: " + err);
+					else
+						this.logger.log("	Packet sent", Logger.level.debug);
+				}).call(ohc, err, data);
+			});
 		}).call(ohc, msg, sender);
 	});
 
@@ -186,7 +160,8 @@ OHC.prototype.http_req_complete = function(handler, response)
 	var data = handler.body.post['rpc'];
 	if(data == undefined)
 	{
-		handler.write_response();
+		handler.send_response();
+		return;
 	}
 	this.logger.log('RX HTTP:', Logger.level.debug);
 	this.logger.log('	Message: ' + data, Logger.level.debug);
@@ -199,7 +174,42 @@ OHC.prototype.http_req_complete = function(handler, response)
 	catch(ex) //Prevent gateway from crashing due to invalid input
 	{
 		this.logger.log('	Invalid json: ' + ex);
+		handler.send_response();
 		return;
+	}
+	var rpcs = json.rpcs;
+	if(typeof rpcs == 'undefined' || typeof rpcs.length !== 'number')
+	{
+		handler.send_response();
+		return;
+	}
+	var response_data = new Array();
+	for(var i = 0; i < rpcs.length; i++)
+	{
+		var response = this.exec_json_rpc(rpcs[i], this.rpc_http);
+		if(typeof response == 'object')
+		{
+			response_data.push(response);
+		}
+	}
+	var resp = JSON.stringify(response_data);
+	this.logger.log('	Response: ' + resp, Logger.level.debug);
+	handler.send_response(resp);
+}
+
+OHC.prototype.exec_json_rpc = function(json, rpc)
+{
+	if(typeof json == 'string')
+	{
+		try
+		{
+			json = JSON.parse(json);
+		}
+		catch(ex) //Prevent gateway from crashing due to invalid input
+		{
+			this.logger.log('	Invalid json: ' + ex);
+			return;
+		}
 	}
 	if(typeof json == 'undefined' || json == null)
 		return;
@@ -207,14 +217,14 @@ OHC.prototype.http_req_complete = function(handler, response)
 	if(typeof method == 'undefined')
 		return;
 	this.logger.log('	Method: ' + method, Logger.level.debug);
-	if(typeof this.rpc_http[method] == 'function')
+	if(typeof rpc[method] == 'function')
 	{
 		var resp = {sucess: false};
 		//Check if method requires authorization and check if client is authorized
-		if(this.rpc_http.no_auth_methods.indexOf(this.rpc_http[method]) >= 0 || this.is_session_token_valid(json.session_token))
+		if(rpc.no_auth_methods.indexOf(rpc[method]) >= 0 || this.is_session_token_valid(json.session_token))
 		{
 			this.logger.log('	Calling: rpc.' + method, Logger.level.debug);
-			var resp = this.rpc_http[method](json);
+			var resp = rpc[method](json);
 		}
 		else
 		{
@@ -229,24 +239,10 @@ OHC.prototype.http_req_complete = function(handler, response)
 		resp.login = this.is_session_token_valid(json.session_token);
 		if(typeof resp == 'object')
 		{
-			//Return response as a stringified json object
-			resp = JSON.stringify(resp);
-			handler.send_response(resp);
-			this.logger.log('	Response: ' + resp, Logger.level.debug);
-			/*resp = new Buffer(resp);
-			socket.send(resp, 0, resp.length, json.rport, sender, function(err, data) {
-				(function(err, data)
-				{
-					if(err)
-						this.logger.log("[SOCKET_TX] ERROR: " + err);
-					else
-						this.logger.log("	Data sent", Logger.level.debug);
-				}).call(ohc, err, data);
-			});*/
+			return resp;
 		}
 	}
 }
-
 
 //Setup wireless module
 OHC.prototype.init_rf = function()
