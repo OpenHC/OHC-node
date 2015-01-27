@@ -30,6 +30,52 @@ rpc.prototype.get_device_by_id = function(json)
 	return resp;
 }
 
+rpc.prototype.set_device_name = function(json)
+{	
+	var resp = new Object();
+	resp.method = 'set_device_name_done';
+	resp.sucess = false;
+	if(typeof json.id !== 'string')
+		return resp;
+	resp.id = json.id;
+	if(typeof this.ohc.devices[json.id] == 'undefined')
+		return resp;
+	if(typeof json.name !== 'string')
+		return resp;
+	this.ohc.devices[json.id].set_name(json.name);
+	resp.sucess = true;
+	return resp;
+}
+
+rpc.prototype.device_set_field_value = function(json)
+{
+	var resp = new Object();
+	resp.method = 'device_set_field_done';
+	resp.sucess = false;
+	if(typeof json.value == 'undefined')
+		return resp;
+	if(typeof json.device_id !== 'string')
+		return resp;
+	resp.device_id = json.device_id;
+	if(typeof this.ohc.devices[json.device_id] == 'undefined')
+		return resp;
+	if(typeof json.field_id !== 'number')
+		return resp;
+	resp.field_id = json.field_id;
+	var field = this.ohc.devices[json.device_id].get_field(json.field_id);
+	if(typeof field == 'undefined')
+		return resp;
+	if(typeof field.writable == 'undefined' || field.writable == false)
+	{
+		return resp;
+	}
+	else
+	{
+		resp.sucess = this.ohc.devices[json.device_id].set_field_value(json.field_id, json.value);
+	}
+	return resp;
+}
+
 rpc.prototype.login = function(json)
 {
 	var resp = new Object();
