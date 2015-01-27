@@ -78,19 +78,4 @@ Device.prototype.get_field = function(num)
 	return this.config.fields[num];
 }
 
-Device.prototype.get_safe_repr = function()
-{
-	var obj = new Object();
-	obj.name = this.get_name();
-	obj.num_fields = this.get_num_fields();
-	obj.fields = new Array();
-	for(var i = 0; i < this.config.fields.length; i++)
-	{
-		var field = this.get_field(i);
-		if(field.readable)
-			obj.fields.push(field);
-	}
-	return obj;
-}
-
 module.exports = Device;

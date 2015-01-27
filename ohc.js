@@ -316,6 +316,11 @@ OHC.prototype.get_device_id = function(index)
 	return this.device_id_by_index[index];
 }
 
+OHC.prototype.get_device_ids = function()
+{
+	return this.device_id_by_index;
+}
+
 OHC.prototype.gen_random_str = function(len)
 {
     var str = '';

@@ -5,6 +5,31 @@ function rpc(ohc)
 	this.no_auth_methods.push(this.login);
 }
 
+rpc.prototype.get_device_ids = function(json)
+{
+	var resp = new Object();
+	resp.method = 'set_device_ids';
+	resp.ids = this.ohc.get_device_ids();
+	resp.success = true;
+	return resp;
+}
+
+rpc.prototype.get_device_by_id = function(json)
+{
+	var resp = new Object();
+	resp.method = 'set_device';
+	resp.sucess = false;
+	if(typeof json.id !== 'string')
+		return resp;
+	resp.id = json.id;
+	var device = this.ohc.devices[json.id];
+	if(typeof device == 'undefined')
+		return resp;
+	resp.device = device.get_safe_repr();
+	resp.sucess = true;
+	return resp;
+}
+
 rpc.prototype.login = function(json)
 {
 	var resp = new Object();
