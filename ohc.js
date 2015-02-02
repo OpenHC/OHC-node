@@ -21,7 +21,7 @@ var Packet_queue = require('./util/packet.js').Packet_queue;
 function OHC()
 {
 	this.logger = new Logger('OHC');
-	this.logger.set_devel(Logger.level.debug);
+	this.logger.set_devel(Logger.level.info);
 	this.tokens = new Array();
 	this.token_length = 32;
 	this.devices = new Object();
@@ -157,7 +157,7 @@ OHC.prototype.init_nw_http = function() //Sets up up tcp listener for rpcs
 OHC.prototype.http_req_complete = function(handler, response)
 {
 	var sender = handler.origin;
-	var data = handler.body.post['rpc'];
+	var data = handler.body.post['rpcs'];
 	if(data == undefined)
 	{
 		handler.send_response();
@@ -177,6 +177,12 @@ OHC.prototype.http_req_complete = function(handler, response)
 		handler.send_response();
 		return;
 	}
+	//Include transaction id in response if request is a transaction
+	var resp = new Object();
+	if(typeof json.transaction_uuid == 'string')
+	{
+		resp.transaction_uuid = json.transaction_uuid;
+	}
 	var rpcs = json.rpcs;
 	if(typeof rpcs == 'undefined' || typeof rpcs.length !== 'number')
 	{
@@ -192,7 +198,8 @@ OHC.prototype.http_req_complete = function(handler, response)
 			response_data.push(response);
 		}
 	}
-	var resp = JSON.stringify(response_data);
+	resp.resp = response_data;
+	resp = JSON.stringify(resp);
 	this.logger.log('	Response: ' + resp, Logger.level.debug);
 	handler.send_response(resp);
 }
