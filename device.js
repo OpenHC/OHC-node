@@ -84,7 +84,7 @@ Device.prototype.get_safe_repr = function()
 	obj.name = this.get_name();
 	obj.num_fields = this.get_num_fields();
 	obj.fields = new Array();
-	for(var i = 0; i < this.config.fields.length; i++)
+	for(var i = 0; i < this.config.num_fields; i++)
 	{
 		var field = this.get_field(i);
 		if(field.readable)
