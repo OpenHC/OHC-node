@@ -21,7 +21,6 @@ Handler.prototype.on_receive_data = function(data)
 	this.data.copy(data_new);
 	data.copy(data_new, this.data.length);
 	this.data = data_new;
-	this.on_end();
 }
 
 Handler.prototype.on_end = function()
