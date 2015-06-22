@@ -101,6 +101,7 @@ OHC.prototype.init_nw_udp = function() //Sets up udp listener for broadcasts and
 			var resp = this.exec_json_rpc(json, rpc_udp);
 			if(typeof resp !== 'object')
 				return;
+			resp.type = json.type;
 			resp = JSON.stringify(resp);
 			this.logger.log('	Response: ' + resp, Logger.level.debug);
 			resp = new Buffer(resp);
